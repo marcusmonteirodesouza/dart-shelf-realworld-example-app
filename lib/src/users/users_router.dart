@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:dart_shelf_realworld_example_app/src/common/errors/dtos/error_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/already_exists_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/argument_exception.dart';
-import 'package:dart_shelf_realworld_example_app/src/common/middleware/authorize.dart';
+import 'package:dart_shelf_realworld_example_app/src/common/middleware/require_auth.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/dtos/user_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/jwt_service.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/users_service.dart';
@@ -162,13 +162,13 @@ class UsersRouter {
     router.get(
         '/user',
         Pipeline()
-            .addMiddleware(authorize(usersService, jwtService))
+            .addMiddleware(requireAuth(usersService, jwtService))
             .addHandler(_getCurrentUserHandler));
 
     router.put(
         '/user',
         Pipeline()
-            .addMiddleware(authorize(usersService, jwtService))
+            .addMiddleware(requireAuth(usersService, jwtService))
             .addHandler(_updateUserHandler));
 
     return router;

@@ -1,8 +1,9 @@
+import 'package:dart_shelf_realworld_example_app/src/common/middleware/authorization_header_helpers.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/jwt_service.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/users_service.dart';
 import 'package:shelf/shelf.dart';
 
-Middleware authorize(
+Middleware requireAuth(
   UsersService usersService,
   JwtService jwtService,
 ) =>
@@ -11,27 +12,8 @@ Middleware authorize(
         final authorizationHeader = request.headers['Authorization'] ??
             request.headers['authorization'];
 
-        if (authorizationHeader == null) {
-          return Response(401);
-        }
-
-        if (!authorizationHeader.startsWith('Token ')) {
-          return Response(401);
-        }
-
-        final token = authorizationHeader.replaceFirst('Token', '').trim();
-
-        if (token.isEmpty) {
-          return Response(401);
-        }
-
-        final userTokenClaim = jwtService.getUserTokenClaim(token);
-
-        if (userTokenClaim == null) {
-          return Response(401);
-        }
-
-        final user = await usersService.getUserByEmail(userTokenClaim.email);
+        final user = await getUserFromAuthorizationHeader(
+            usersService, jwtService, authorizationHeader);
 
         if (user == null) {
           return Response(401);
