@@ -1,216 +1,163 @@
+import 'dart:convert';
+
+import 'package:dart_shelf_realworld_example_app/src/common/errors/dtos/error_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/already_exists_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/argument_exception.dart';
-import 'package:dart_shelf_realworld_example_app/src/users/model/user.dart';
-import 'package:email_validator/email_validator.dart';
-import 'package:postgres/postgres.dart';
+import 'package:dart_shelf_realworld_example_app/src/users/dtos/user_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/users/jwt_service.dart';
+import 'package:dart_shelf_realworld_example_app/src/users/users_repository.dart';
+import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
+
+import 'model/user.dart';
+
+part 'users_service.g.dart';
 
 class UsersService {
-  static String usersTable = 'users';
+  final UsersRepository usersRepository;
+  final JwtService jwtService;
 
-  final PostgreSQLConnection connection;
+  UsersService({required this.usersRepository, required this.jwtService});
 
-  UsersService({required this.connection});
+  @Route.post('/users')
+  Future<Response> registerUserHandler(Request request) async {
+    final requestBody = await request.readAsString();
+    final requestData = json.decode(requestBody);
 
-  Future<User> createUser(
-      String username, String email, String password) async {
-    username = username.trim();
-    email = email.trim();
+    final userData = requestData['user'];
 
-    if (username.isEmpty) {
-      throw ArgumentException(
-          message: 'username cannot be blank', parameterName: 'username');
+    if (userData == null) {
+      return Response(422,
+          body: jsonEncode(ErrorDto(errors: ['user is required'])));
     }
 
-    if (email.isEmpty) {
-      throw ArgumentException(
-          message: 'email cannot be blank', parameterName: 'email');
+    final username = userData['username'];
+    final email = userData['email'];
+    final password = userData['password'];
+
+    if (username == null) {
+      return Response(422,
+          body: jsonEncode(ErrorDto(errors: ['username is required'])));
     }
 
-    if (!EmailValidator.validate(email)) {
-      throw ArgumentException(
-          message: 'Invalid email: $email', parameterName: 'email');
+    if (email == null) {
+      return Response(422,
+          body: jsonEncode(ErrorDto(errors: ['email is required'])));
     }
 
-    // See https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html#implement-proper-password-strength-controls
-    final passwordMinLength = 8;
-    final passwordMaxLength = 64;
-
-    if (password.length < passwordMinLength) {
-      throw ArgumentException(
-          message:
-              'Password length must be greater than or equal to $passwordMinLength',
-          parameterName: 'password');
+    if (password == null) {
+      return Response(422,
+          body: jsonEncode(ErrorDto(errors: ['password is required'])));
     }
 
-    if (password.length > passwordMaxLength) {
-      throw ArgumentException(
-          message:
-              'Password length must be less than or equal to $passwordMaxLength',
-          parameterName: 'password');
+    User user;
+
+    try {
+      user = await usersRepository.createUser(username, email, password);
+    } on ArgumentException catch (e) {
+      return Response(422, body: jsonEncode(ErrorDto(errors: [e.message])));
+    } on AlreadyExistsException catch (e) {
+      return Response(409, body: jsonEncode(ErrorDto(errors: [e.message])));
     }
 
-    var alreadyExistingUser = await getUserByEmail(email);
+    final token = jwtService.getToken(user.email);
 
-    if (alreadyExistingUser != null) {
-      throw AlreadyExistsException(
-          message: 'User already exists', parameterName: 'email');
-    }
+    final userDto =
+        UserDto(username: user.username, email: user.email, token: token);
 
-    final sql =
-        "INSERT INTO $usersTable(username, email, password_hash) VALUES (@username, @email, crypt(@password, gen_salt('bf'))) RETURNING id, created_at, updated_at;";
-
-    final result = await connection.query(sql, substitutionValues: {
-      'username': username,
-      'email': email,
-      'password': password
-    });
-
-    final userRow = result[0];
-    final userId = userRow[0];
-    final createdAt = userRow[1];
-    final updatedAt = userRow[2];
-
-    return User(
-        id: userId,
-        username: username,
-        email: email,
-        createdAt: createdAt,
-        updatedAt: updatedAt);
+    return Response(201, body: jsonEncode(userDto));
   }
 
-  Future<User?> getUserByEmail(String email) async {
-    final sql =
-        'SELECT id, username, bio, image, created_at, updated_at FROM $usersTable WHERE email = @email;';
+  @Route.post('/users/login')
+  Future<Response> loginUserHandler(Request request) async {
+    final requestBody = await request.readAsString();
+    final requestData = json.decode(requestBody);
 
-    final result =
-        await connection.query(sql, substitutionValues: {'email': email});
+    final userData = requestData['user'];
 
-    if (result.isEmpty) {
-      return null;
+    if (userData == null) {
+      return Response(401);
     }
 
-    final userRow = result[0];
+    final email = userData['email'];
+    final password = userData['password'];
 
-    final userId = userRow[0];
-    final username = userRow[1];
-    final bio = userRow[2];
-    final image = userRow[3];
-    final createdAt = userRow[4];
-    final updatedAt = userRow[5];
-
-    return User(
-        id: userId,
-        username: username,
-        email: email,
-        bio: bio,
-        image: image,
-        createdAt: createdAt,
-        updatedAt: updatedAt);
-  }
-
-  Future<User?> getUserByEmailAndPassword(String email, String password) async {
-    final sql =
-        'SELECT id, username, bio, image, created_at, updated_at FROM $usersTable WHERE email = @email AND password_hash = crypt(@password, password_hash);';
-
-    final result = await connection
-        .query(sql, substitutionValues: {'email': email, 'password': password});
-
-    if (result.isEmpty) {
-      return null;
+    if (email == null) {
+      return Response(401);
     }
 
-    final userRow = result[0];
-
-    final userId = userRow[0];
-    final username = userRow[1];
-    final bio = userRow[2];
-    final image = userRow[3];
-    final createdAt = userRow[4];
-    final updatedAt = userRow[5];
-
-    return User(
-        id: userId,
-        username: username,
-        email: email,
-        bio: bio,
-        image: image,
-        createdAt: createdAt,
-        updatedAt: updatedAt);
-  }
-
-  Future<User> updateUserByEmail(String email,
-      {String? username,
-      String? emailForUpdate,
-      String? password,
-      String? bio,
-      String? image}) async {
-    final initialSql = 'UPDATE $usersTable';
-
-    var sql = initialSql;
-
-    if (username != null) {
-      if (sql == initialSql) {
-        sql = sql + ' SET username = @username';
-      } else {
-        sql = sql + ', username = @username';
-      }
+    if (password == null) {
+      return Response(401);
     }
 
-    if (emailForUpdate != null) {
-      if (sql == initialSql) {
-        sql = sql + ' SET email = @emailForUpdate';
-      } else {
-        sql = sql + ', email = @emailForUpdate';
-      }
-    }
-
-    if (password != null) {
-      if (sql == initialSql) {
-        sql = sql + " SET password_hash = crypt(@password, gen_salt('bf'))";
-      } else {
-        sql = sql + ", password_hash = crypt(@password, gen_salt('bf'))";
-      }
-    }
-
-    if (bio != null) {
-      if (sql == initialSql) {
-        sql = sql + ' SET bio = @bio';
-      } else {
-        sql = sql + ', bio = @bio';
-      }
-    }
-
-    if (image != null) {
-      if (sql == initialSql) {
-        sql = sql + ' SET image = @image';
-      } else {
-        sql = sql + ', image = @image';
-      }
-    }
-
-    var updatedEmail = email;
-    if (sql != initialSql) {
-      sql = sql + ' WHERE email = @email RETURNING email;';
-
-      final result = await connection.query(sql, substitutionValues: {
-        'email': email,
-        'username': username,
-        'emailForUpdate': emailForUpdate,
-        'password': password,
-        'bio': bio,
-        'image': image
-      });
-
-      updatedEmail = result[0][0];
-    }
-
-    final user = await getUserByEmail(updatedEmail);
+    final user =
+        await usersRepository.getUserByEmailAndPassword(email, password);
 
     if (user == null) {
-      throw AssertionError(
-          "User cannot be null at this point. Email: $email. Updated Email: $updatedEmail");
+      return Response(401);
     }
 
-    return user;
+    final token = jwtService.getToken(user.email);
+
+    final userDto = UserDto(
+        username: user.username,
+        email: user.email,
+        token: token,
+        bio: user.bio,
+        image: user.image);
+
+    return Response.ok(jsonEncode(userDto));
   }
+
+  @Route.get('/user')
+  Future<Response> getCurrentUserHandler(Request request) async {
+    final user = request.context['user'] as User;
+
+    final token = jwtService.getToken(user.email);
+
+    final userDto = UserDto(
+        username: user.username,
+        email: user.email,
+        token: token,
+        bio: user.bio,
+        image: user.image);
+
+    return Response.ok(jsonEncode(userDto));
+  }
+
+  @Route.put('/user')
+  Future<Response> updateUserHandler(Request request) async {
+    final user = request.context['user'] as User;
+
+    final requestBody = await request.readAsString();
+    final requestData = json.decode(requestBody);
+
+    final userData = requestData['user'];
+    final username = userData['username'];
+    final emailForUpdate = userData['email'];
+    final password = userData['password'];
+    final bio = userData['bio'];
+    final image = userData['image'];
+
+    final updatedUser = await usersRepository.updateUserByEmail(user.email,
+        username: username,
+        emailForUpdate: emailForUpdate,
+        password: password,
+        bio: bio,
+        image: image);
+
+    final token = jwtService.getToken(updatedUser.email);
+
+    final userDto = UserDto(
+        username: updatedUser.username,
+        email: updatedUser.email,
+        token: token,
+        bio: updatedUser.bio,
+        image: updatedUser.image);
+
+    return Response.ok(jsonEncode(userDto));
+  }
+
+  // Create router using the generate function defined in 'userservice.g.dart'.
+  Router get router => _$UsersServiceRouter(this);
 }

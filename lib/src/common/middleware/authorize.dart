@@ -1,8 +1,8 @@
 import 'package:dart_shelf_realworld_example_app/src/users/jwt_service.dart';
-import 'package:dart_shelf_realworld_example_app/src/users/users_service.dart';
+import 'package:dart_shelf_realworld_example_app/src/users/users_repository.dart';
 import 'package:shelf/shelf.dart';
 
-Middleware authorize(UsersService usersService, JwtService jwtService,
+Middleware authorize(UsersRepository usersRepository, JwtService jwtService,
         List<String> routesRequiringAuthorization) =>
     (innerHandler) {
       return (request) async {
@@ -33,7 +33,8 @@ Middleware authorize(UsersService usersService, JwtService jwtService,
             return Response(401);
           }
 
-          final user = await usersService.getUserByEmail(userTokenClaim.email);
+          final user =
+              await usersRepository.getUserByEmail(userTokenClaim.email);
 
           if (user == null) {
             return Response(401);

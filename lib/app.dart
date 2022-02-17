@@ -1,8 +1,9 @@
 import 'dart:io';
 
-import 'package:dart_shelf_realworld_example_app/src/app_router.dart';
+import 'package:dart_shelf_realworld_example_app/src/api_service.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/middleware/authorize.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/jwt_service.dart';
+import 'package:dart_shelf_realworld_example_app/src/users/users_repository.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/users_service.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
@@ -48,11 +49,12 @@ Future<HttpServer> createServer() async {
 
   await connection.open();
 
-  final usersService = UsersService(connection: connection);
+  final usersRepository = UsersRepository(connection: connection);
   final jwtService = JwtService(issuer: authIssuer, secretKey: authSecretKey);
+  final usersService =
+      UsersService(usersRepository: usersRepository, jwtService: jwtService);
 
-  final router =
-      AppRouter(jwtService: jwtService, usersService: usersService).router;
+  final apiRouter = ApiService(usersService: usersService).router;
 
   // Use any available host or container IP (usually `0.0.0.0`).
   final ip = InternetAddress.anyIPv4;
@@ -61,8 +63,8 @@ Future<HttpServer> createServer() async {
   final handler = Pipeline()
       .addMiddleware(logRequests())
       .addMiddleware(authorize(
-          usersService, jwtService, AppRouter.routesRequiringAuthorization))
-      .addHandler(router);
+          usersRepository, jwtService, ApiService.routesRequiringAuthorization))
+      .addHandler(apiRouter);
 
   final port = int.parse(Platform.environment['PORT'] ?? '8080');
 
