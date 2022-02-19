@@ -128,9 +128,10 @@ class ArticlesRouter {
     final contextUser = request.context['user'];
     if (contextUser != null) {
       final user = contextUser as User;
-      isArticleFavorited =
-          await articlesService.isFavorited(user.id, article.id);
-      isFollowingAuthor = await profilesService.isFollowing(user.id, author.id);
+      isArticleFavorited = await articlesService.isFavorited(
+          userId: user.id, articleId: article.id);
+      isFollowingAuthor = await profilesService.isFollowing(
+          followerId: user.id, followeeId: author.id);
     }
 
     final favoritesCount = await articlesService.getFavoritesCount(article.id);
@@ -190,6 +191,10 @@ class ArticlesRouter {
           jsonEncode(ErrorDto(errors: ['Article not found'])));
     }
 
+    if (article.authorId != user.id) {
+      return Response(403);
+    }
+
     Article updatedArticle;
 
     try {
@@ -222,6 +227,31 @@ class ArticlesRouter {
     return Response.ok(jsonEncode(articleDto));
   }
 
+  Future<Response> _deleteArticle(Request request) async {
+    final user = request.context['user'] as User;
+
+    final slug = request.params['slug'];
+
+    if (slug == null) {
+      throw UnsupportedError('slug must be in the request params');
+    }
+
+    final article = await articlesService.getArticleBySlug(slug);
+
+    if (article == null) {
+      return Response.notFound(
+          jsonEncode(ErrorDto(errors: ['Article not found'])));
+    }
+
+    if (article.authorId != user.id) {
+      return Response(403);
+    }
+
+    await articlesService.deleteArticleBySlug(slug);
+
+    return Response(204);
+  }
+
   Handler get router {
     final router = Router();
 
@@ -242,6 +272,12 @@ class ArticlesRouter {
         Pipeline()
             .addMiddleware(authProvider.requireAuth())
             .addHandler(_updateArticle));
+
+    router.delete(
+        '/articles/<slug>',
+        Pipeline()
+            .addMiddleware(authProvider.requireAuth())
+            .addHandler(_deleteArticle));
 
     return router;
   }

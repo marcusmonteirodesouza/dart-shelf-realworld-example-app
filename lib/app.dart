@@ -9,18 +9,21 @@ import 'package:dart_shelf_realworld_example_app/src/profiles/profiles_service.d
 import 'package:dart_shelf_realworld_example_app/src/users/jwt_service.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/users_service.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/users_router.dart';
+import 'package:dotenv/dotenv.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 
 Future<HttpServer> createServer() async {
-  final authSecretKey = Platform.environment['AUTH_SECRET_KEY'];
-  final authIssuer = Platform.environment['AUTH_ISSUER'];
-  final dbHost = Platform.environment['DB_HOST'];
-  final envDbPort = Platform.environment['DB_PORT'];
-  final dbName = Platform.environment['DB_NAME'];
-  final dbUser = Platform.environment['DB_USER'];
-  final dbPassword = Platform.environment['DB_PASSWORD'];
+  load();
+
+  final authSecretKey = env['AUTH_SECRET_KEY'];
+  final authIssuer = env['AUTH_ISSUER'];
+  final dbHost = env['DB_HOST'];
+  final envDbPort = env['DB_PORT'];
+  final dbName = env['DB_NAME'];
+  final dbUser = env['DB_USER'];
+  final dbPassword = env['DB_PASSWORD'];
 
   if (authSecretKey == null) {
     throw StateError('Environment variable AUTH_SECRET_KEY is required');
@@ -89,7 +92,7 @@ Future<HttpServer> createServer() async {
   // Configure a pipeline that logs requests.
   final handler = Pipeline().addMiddleware(logRequests()).addHandler(apiRouter);
 
-  final port = int.parse(Platform.environment['PORT'] ?? '8080');
+  final port = int.parse(env['PORT'] ?? '8080');
 
   // For running in containers, we respect the PORT environment variable.
   final server = await serve(handler, ip, port);

@@ -55,7 +55,8 @@ class UsersRouter {
     User user;
 
     try {
-      user = await usersService.createUser(username, email, password);
+      user = await usersService.createUser(
+          username: username, email: email, password: password);
     } on ArgumentException catch (e) {
       return Response(422, body: jsonEncode(ErrorDto(errors: [e.message])));
     } on AlreadyExistsException catch (e) {

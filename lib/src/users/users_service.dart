@@ -13,7 +13,9 @@ class UsersService {
   UsersService({required this.connection});
 
   Future<User> createUser(
-      String username, String email, String password) async {
+      {required String username,
+      required String email,
+      required String password}) async {
     await _validateUsernameOrThrow(username);
 
     await _validateEmailOrThrow(email);

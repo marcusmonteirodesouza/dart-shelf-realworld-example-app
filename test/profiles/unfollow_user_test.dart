@@ -20,14 +20,13 @@ void main() {
   test('Given caller already follows should return 200', () async {
     final caller = await registerRandomUser();
 
-    await followUser(
-        followeeUsername: followee.username, followerToken: caller.user.token);
+    await followUserByUsername(followee.username, token: caller.user.token);
 
-    final profile = await unfollowUserAndDecode(
-        followeeUsername: followee.username, followerToken: caller.user.token);
+    final profile = await unfollowUserByUsernameAndDecode(followee.username,
+        token: caller.user.token);
 
     final fetchedProfileAfterUpdate =
-        await getProfileAndDecode(username: followee.username);
+        await getProfileByUsernameAndDecode(followee.username);
 
     expect(fetchedProfileAfterUpdate.following, false);
 
@@ -41,11 +40,11 @@ void main() {
   test('Given caller does not follow should return 200', () async {
     final caller = await registerRandomUser();
 
-    final profile = await unfollowUserAndDecode(
-        followeeUsername: followee.username, followerToken: caller.user.token);
+    final profile = await unfollowUserByUsernameAndDecode(followee.username,
+        token: caller.user.token);
 
     final fetchedProfileAfterUpdate =
-        await getProfileAndDecode(username: followee.username);
+        await getProfileByUsernameAndDecode(followee.username);
 
     expect(fetchedProfileAfterUpdate.following, false);
 
@@ -61,8 +60,8 @@ void main() {
 
     final username = faker.internet.userName();
 
-    final response = await unfollowUser(
-        followeeUsername: username, followerToken: caller.user.token);
+    final response =
+        await unfollowUserByUsername(username, token: caller.user.token);
 
     expect(response.statusCode, 404);
 
@@ -98,7 +97,7 @@ void main() {
 
     test('Given user is not found should return 401', () async {
       final email = faker.internet.email();
-      final token = makeToken(email);
+      final token = makeTokenWithEmail(email);
 
       final headers = {'Authorization': 'Token $token'};
 

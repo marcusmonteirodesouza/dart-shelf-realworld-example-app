@@ -6,7 +6,7 @@ Map<String, String> makeAuthorizationHeader(String token) {
   return {'Authorization': 'Token $token'};
 }
 
-String makeToken(String email) {
+String makeTokenWithEmail(String email) {
   final jwtService = JwtService(issuer: issuer, secretKey: secretKey);
   return jwtService.getToken(email);
 }

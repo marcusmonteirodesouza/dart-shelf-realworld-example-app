@@ -19,8 +19,7 @@ void main() {
     final bio = faker.job.title();
     final image = faker.internet.uri('https');
 
-    final updatedUser = await updateUserAndDecode(
-        token: userAndPassword.user.token,
+    final updatedUser = await updateUserAndDecode(userAndPassword.user.token,
         username: username,
         email: email,
         password: password,
@@ -47,8 +46,8 @@ void main() {
 
       final username = faker.internet.userName();
 
-      final updatedUser = await updateUserAndDecode(
-          token: userAndPassword.user.token, username: username);
+      final updatedUser = await updateUserAndDecode(userAndPassword.user.token,
+          username: username);
 
       final fetchedUserAfterUpdate = await getCurrentUser(updatedUser.token);
 
@@ -70,8 +69,8 @@ void main() {
 
       final username = '';
 
-      final response = await updateUser(
-          token: userAndPassword.user.token, username: username);
+      final response =
+          await updateUser(userAndPassword.user.token, username: username);
 
       expect(response.statusCode, 422);
 
@@ -87,8 +86,8 @@ void main() {
 
       final username = ' ';
 
-      final response = await updateUser(
-          token: userAndPassword.user.token, username: username);
+      final response =
+          await updateUser(userAndPassword.user.token, username: username);
 
       expect(response.statusCode, 422);
 
@@ -104,8 +103,7 @@ void main() {
 
       final anotherUserAndPassword = await registerRandomUser();
 
-      final response = await updateUser(
-          token: userAndPassword.user.token,
+      final response = await updateUser(userAndPassword.user.token,
           username: anotherUserAndPassword.user.username);
 
       expect(response.statusCode, 409);
@@ -124,8 +122,8 @@ void main() {
 
       final email = faker.internet.email();
 
-      final updatedUser = await updateUserAndDecode(
-          token: userAndPassword.user.token, email: email);
+      final updatedUser =
+          await updateUserAndDecode(userAndPassword.user.token, email: email);
 
       final fetchedUserAfterUpdate = await getCurrentUser(updatedUser.token);
 
@@ -148,7 +146,7 @@ void main() {
       final email = '';
 
       final response =
-          await updateUser(token: userAndPassword.user.token, email: email);
+          await updateUser(userAndPassword.user.token, email: email);
 
       expect(response.statusCode, 422);
 
@@ -165,7 +163,7 @@ void main() {
       final email = ' ';
 
       final response =
-          await updateUser(token: userAndPassword.user.token, email: email);
+          await updateUser(userAndPassword.user.token, email: email);
 
       expect(response.statusCode, 422);
 
@@ -182,7 +180,7 @@ void main() {
       final email = faker.lorem.word();
 
       final response =
-          await updateUser(token: userAndPassword.user.token, email: email);
+          await updateUser(userAndPassword.user.token, email: email);
 
       expect(response.statusCode, 422);
 
@@ -198,8 +196,7 @@ void main() {
 
       final anotherUserAndPassword = await registerRandomUser();
 
-      final response = await updateUser(
-          token: userAndPassword.user.token,
+      final response = await updateUser(userAndPassword.user.token,
           email: anotherUserAndPassword.user.email);
 
       expect(response.statusCode, 409);
@@ -218,8 +215,8 @@ void main() {
 
       final bio = faker.job.title();
 
-      final updatedUser = await updateUserAndDecode(
-          token: userAndPassword.user.token, bio: bio);
+      final updatedUser =
+          await updateUserAndDecode(userAndPassword.user.token, bio: bio);
 
       final fetchedUserAfterUpdate = await getCurrentUser(updatedUser.token);
 
@@ -243,8 +240,8 @@ void main() {
 
       final image = faker.internet.uri('https');
 
-      final updatedUser = await updateUserAndDecode(
-          token: userAndPassword.user.token, image: image);
+      final updatedUser =
+          await updateUserAndDecode(userAndPassword.user.token, image: image);
 
       final fetchedUserAfterUpdate = await getCurrentUser(updatedUser.token);
 
@@ -267,7 +264,7 @@ void main() {
       final image = '';
 
       final response =
-          await updateUser(token: userAndPassword.user.token, image: image);
+          await updateUser(userAndPassword.user.token, image: image);
 
       expect(response.statusCode, 422);
 
@@ -284,7 +281,7 @@ void main() {
       final image = ' ';
 
       final response =
-          await updateUser(token: userAndPassword.user.token, image: image);
+          await updateUser(userAndPassword.user.token, image: image);
 
       expect(response.statusCode, 422);
 
@@ -301,7 +298,7 @@ void main() {
       final image = faker.lorem.word();
 
       final response =
-          await updateUser(token: userAndPassword.user.token, image: image);
+          await updateUser(userAndPassword.user.token, image: image);
 
       expect(response.statusCode, 422);
 
@@ -316,8 +313,7 @@ void main() {
   test('Given no fields should return 200', () async {
     final userAndPassword = await registerRandomUser();
 
-    final updatedUser =
-        await updateUserAndDecode(token: userAndPassword.user.token);
+    final updatedUser = await updateUserAndDecode(userAndPassword.user.token);
 
     final fetchedUserAfterUpdate = await getCurrentUser(updatedUser.token);
 
@@ -348,7 +344,7 @@ void main() {
 
     test('Given user is not found should return 401', () async {
       final email = faker.internet.email();
-      final token = makeToken(email);
+      final token = makeTokenWithEmail(email);
 
       final headers = {'Authorization': 'Token $token'};
 

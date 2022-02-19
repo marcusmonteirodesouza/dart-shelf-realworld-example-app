@@ -170,7 +170,8 @@ class ArticlesService {
     return favorites;
   }
 
-  Future<bool> isFavorited(String userId, String articleId) async {
+  Future<bool> isFavorited(
+      {required String userId, required String articleId}) async {
     final favorites = await listFavorites(articleId);
 
     return favorites.any((f) => f.userId == userId);
@@ -269,6 +270,19 @@ class ArticlesService {
     }
 
     return updatedArticle;
+  }
+
+  Future<void> deleteArticleBySlug(String slug) async {
+    final article = await getArticleBySlug(slug);
+
+    if (article == null) {
+      throw NotFoundException(message: 'Article not found');
+    }
+
+    final sql =
+        'UPDATE $articlesTable SET deleted_at = current_timestamp WHERE id = @articleId;';
+
+    await connection.query(sql, substitutionValues: {'articleId': article.id});
   }
 
   void _validateTitleOrThrow(String title) {

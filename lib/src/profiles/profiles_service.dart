@@ -13,7 +13,8 @@ class ProfilesService {
 
   ProfilesService({required this.connection, required this.usersService});
 
-  Future<Follow> createFollow(String followerId, String followeeId) async {
+  Future<Follow> createFollow(
+      {required String followerId, required String followeeId}) async {
     if (followerId == followeeId) {
       throw ArgumentException(message: 'Cannot follow own user');
     }
@@ -30,8 +31,8 @@ class ProfilesService {
       throw NotFoundException(message: 'Followee not found');
     }
 
-    final existingFollow =
-        await getFollowByFollowerAndFollowee(follower.id, followee.id);
+    final existingFollow = await getFollowByFollowerAndFollowee(
+        followerId: follower.id, followeeId: followee.id);
 
     if (existingFollow != null) {
       return existingFollow;
@@ -107,7 +108,7 @@ class ProfilesService {
   }
 
   Future<Follow?> getFollowByFollowerAndFollowee(
-      String followerId, String followeeId) async {
+      {required String followerId, required String followeeId}) async {
     final sql =
         'SELECT id FROM $followsTable WHERE follower_id = @followerId AND followee_id = @followeeId AND deleted_at IS NULL;';
 
@@ -126,8 +127,8 @@ class ProfilesService {
   }
 
   Future<void> deleteFollowByFollowerAndFollowee(
-      String followerId, String followeeId) async {
-    if (!(await isFollowing(followerId, followeeId))) {
+      {required String followerId, required String followeeId}) async {
+    if (!(await isFollowing(followerId: followerId, followeeId: followeeId))) {
       throw ArgumentException(message: 'Follow was not found');
     }
 
@@ -140,7 +141,10 @@ class ProfilesService {
     });
   }
 
-  Future<bool> isFollowing(String followerId, String followeeId) async {
-    return await getFollowByFollowerAndFollowee(followerId, followeeId) != null;
+  Future<bool> isFollowing(
+      {required String followerId, required String followeeId}) async {
+    return await getFollowByFollowerAndFollowee(
+            followerId: followerId, followeeId: followeeId) !=
+        null;
   }
 }

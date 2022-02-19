@@ -26,8 +26,8 @@ void main() {
 
       final title = faker.lorem.sentence();
 
-      final updatedArticle = await updateArticleAndDecode(
-          token: author.token, slug: article.slug, title: title);
+      final updatedArticle = await updateArticleBySlugAndDecode(article.slug,
+          token: author.token, title: title);
 
       final now = DateTime.now();
 
@@ -107,8 +107,8 @@ void main() {
           .sentences(faker.randomGenerator.integer(10, min: 1))
           .join();
 
-      final updatedArticle = await updateArticleAndDecode(
-          token: author.token, slug: article.slug, description: description);
+      final updatedArticle = await updateArticleBySlugAndDecode(article.slug,
+          token: author.token, description: description);
 
       final now = DateTime.now();
 
@@ -188,8 +188,8 @@ void main() {
           .sentences(faker.randomGenerator.integer(10, min: 1))
           .join();
 
-      final updatedArticle = await updateArticleAndDecode(
-          token: author.token, slug: article.slug, body: body);
+      final updatedArticle = await updateArticleBySlugAndDecode(article.slug,
+          token: author.token, body: body);
 
       final now = DateTime.now();
 
@@ -269,7 +269,7 @@ void main() {
     });
 
     test('Given no authorization header should return 401', () async {
-      final response = await put(updateArticleUri(article.slug));
+      final response = await put(updateArticleBySlugUri(article.slug));
 
       expect(response.statusCode, 401);
     });
@@ -277,7 +277,7 @@ void main() {
     test('Given invalid authorization header should return 401', () async {
       final headers = {'Authorization': 'invalid'};
       final response =
-          await put(updateArticleUri(article.slug), headers: headers);
+          await put(updateArticleBySlugUri(article.slug), headers: headers);
 
       expect(response.statusCode, 401);
     });
@@ -285,21 +285,30 @@ void main() {
     test('Given no token should return 401', () async {
       final headers = {'Authorization': 'Token '};
       final response =
-          await put(updateArticleUri(article.slug), headers: headers);
+          await put(updateArticleBySlugUri(article.slug), headers: headers);
 
       expect(response.statusCode, 401);
     });
 
     test('Given user is not found should return 401', () async {
       final email = faker.internet.email();
-      final token = makeToken(email);
+      final token = makeTokenWithEmail(email);
 
       final headers = {'Authorization': 'Token $token'};
 
       final response =
-          await put(updateArticleUri(article.slug), headers: headers);
+          await put(updateArticleBySlugUri(article.slug), headers: headers);
 
       expect(response.statusCode, 401);
+    });
+
+    test('Given wrong token should return 403', () async {
+      final anotherUser = await registerRandomUser();
+
+      final response = await updateArticleBySlug(article.slug,
+          token: anotherUser.user.token);
+
+      expect(response.statusCode, 403);
     });
   });
 }

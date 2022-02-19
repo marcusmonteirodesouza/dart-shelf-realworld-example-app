@@ -40,8 +40,8 @@ class ProfilesRouter {
     var authUser = request.context['user'];
     if (authUser != null) {
       authUser = authUser as User;
-      isFollowing =
-          await profilesService.isFollowing(authUser.id, profileUser.id);
+      isFollowing = await profilesService.isFollowing(
+          followerId: authUser.id, followeeId: profileUser.id);
       print(authUser);
       print(isFollowing);
     }
@@ -70,7 +70,8 @@ class ProfilesRouter {
     }
 
     try {
-      await profilesService.createFollow(follower.id, followee.id);
+      await profilesService.createFollow(
+          followerId: follower.id, followeeId: followee.id);
     } on ArgumentException catch (e) {
       return Response(422, body: jsonEncode(ErrorDto(errors: [e.message])));
     }
@@ -98,9 +99,10 @@ class ProfilesRouter {
           jsonEncode(ErrorDto(errors: ['User not found'])));
     }
 
-    if ((await profilesService.isFollowing(follower.id, followee.id))) {
+    if ((await profilesService.isFollowing(
+        followerId: follower.id, followeeId: followee.id))) {
       await profilesService.deleteFollowByFollowerAndFollowee(
-          follower.id, followee.id);
+          followerId: follower.id, followeeId: followee.id);
     }
 
     return Response.ok(jsonEncode(ProfileDto(
