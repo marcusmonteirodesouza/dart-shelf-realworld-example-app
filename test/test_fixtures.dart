@@ -4,7 +4,11 @@ final faker = Faker();
 
 final port = 8080;
 
-final host = 'http://localhost:$port/api';
+final authority = 'localhost:$port';
+
+final apiPath = 'api';
+
+final host = 'http://$authority/$apiPath';
 
 final secretKey = 'secret';
 

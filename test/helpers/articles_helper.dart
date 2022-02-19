@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/article_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_articles_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/dtos/user_dto.dart';
 import 'package:http/http.dart';
 import 'package:slugify/slugify.dart';
@@ -115,6 +116,88 @@ Future<ArticleDto> getArticleAndDecodeBySlug(String slug,
   final responseJson = jsonDecode(response.body);
 
   return ArticleDto.fromJson(responseJson);
+}
+
+Uri listArticlesUri(
+    {String? tag,
+    String? author,
+    String? favoritedByUsername,
+    int? limit,
+    int? offset}) {
+  Map<String, dynamic> queryParameters = {};
+
+  if (tag != null) {
+    queryParameters['tag'] = tag;
+  }
+
+  if (author != null) {
+    queryParameters['author'] = author;
+  }
+
+  if (favoritedByUsername != null) {
+    queryParameters['favorited'] = favoritedByUsername;
+  }
+
+  if (limit != null) {
+    queryParameters['limit'] = limit;
+  }
+
+  if (offset != null) {
+    queryParameters['offset'] = offset;
+  }
+
+  if (Uri.parse(host).isScheme('http')) {
+    return Uri.http(authority, '/$apiPath/articles', queryParameters);
+  } else if (Uri.parse(host).isScheme('https')) {
+    return Uri.https(authority, '/$apiPath/articles', queryParameters);
+  } else {
+    throw UnsupportedError('Unsupported host scheme ${Uri.parse(host).scheme}');
+  }
+}
+
+Future<Response> listArticles(
+    {String? token,
+    String? tag,
+    String? author,
+    String? favoritedByUsername,
+    int? limit,
+    int? offset}) async {
+  Map<String, String> headers = {};
+
+  if (token != null) {
+    headers = makeAuthorizationHeader(token);
+  }
+
+  return await get(
+      listArticlesUri(
+          tag: tag,
+          author: author,
+          favoritedByUsername: favoritedByUsername,
+          limit: limit,
+          offset: offset),
+      headers: headers);
+}
+
+Future<MultipleArticlesDto> listArticlesAndDecode(
+    {String? token,
+    String? tag,
+    String? author,
+    String? favoritedByUsername,
+    int? limit,
+    int? offset}) async {
+  final response = await listArticles(
+      token: token,
+      tag: tag,
+      author: author,
+      favoritedByUsername: favoritedByUsername,
+      limit: limit,
+      offset: offset);
+
+  expect(response.statusCode, 200);
+
+  final responseJson = jsonDecode(response.body);
+
+  return MultipleArticlesDto.fromJson(responseJson);
 }
 
 Uri updateArticleBySlugUri(String slug) {

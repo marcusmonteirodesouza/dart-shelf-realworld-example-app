@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dart_shelf_realworld_example_app/src/articles/articles_service.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/article_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_articles_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/model/article.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/errors/dtos/error_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/already_exists_exception.dart';
@@ -157,6 +158,116 @@ class ArticlesRouter {
     return Response.ok(jsonEncode(articleDto));
   }
 
+  Future<Response> _listArticles(Request request) async {
+    final tag = request.params['tag'];
+    final authorUsername = request.params['author'];
+    final favoritedByUsername = request.params['favorite'];
+    final limitParam = request.params['limit'];
+    final offsetParam = request.params['offset'];
+
+    String? authorId;
+    if (authorUsername != null) {
+      final author = await usersService.getUserByUsername(authorUsername);
+
+      if (author == null) {
+        return Response.notFound(
+            jsonEncode(ErrorDto(errors: ['Author not found'])));
+      }
+
+      authorId = author.id;
+    }
+
+    String? favoritedByUserId;
+    if (favoritedByUsername != null) {
+      final favoritedByUser =
+          await usersService.getUserByUsername(favoritedByUsername);
+
+      if (favoritedByUser == null) {
+        return Response.notFound(
+            jsonEncode(ErrorDto(errors: ['Favorited not found'])));
+      }
+
+      favoritedByUserId = favoritedByUser.id;
+    }
+
+    int? limit;
+    if (limitParam != null) {
+      limit = int.tryParse(limitParam);
+
+      if (limit == null) {
+        return Response(422,
+            body: jsonEncode(ErrorDto(errors: ['Invalid limit'])));
+      }
+    }
+
+    int? offset;
+    if (offsetParam != null) {
+      offset = int.tryParse(offsetParam);
+
+      if (offset == null) {
+        return Response(422,
+            body: jsonEncode(ErrorDto(errors: ['Invalid offset'])));
+      }
+    }
+
+    final articles = await articlesService.listArticles(
+        tag: tag,
+        authorId: authorId,
+        favoritedByUserId: favoritedByUserId,
+        limit: limit,
+        offset: offset);
+
+    final articlesDtos = <ArticleDto>[];
+
+    for (final article in articles) {
+      final favoritesCount =
+          await articlesService.getFavoritesCount(article.id);
+
+      final articleAuthor = await usersService.getUserById(article.authorId);
+
+      if (articleAuthor == null) {
+        throw StateError('Article author not found');
+      }
+
+      var isArticleFavoritedByUser = false;
+      var isArticleAuthorFollowedByUser = false;
+
+      if (request.context['user'] != null) {
+        final user = request.context['user'] as User;
+
+        isArticleFavoritedByUser = await articlesService.isFavorited(
+            userId: user.id, articleId: article.id);
+
+        isArticleAuthorFollowedByUser = await profilesService.isFollowing(
+            followerId: user.id, followeeId: articleAuthor.id);
+      }
+
+      final articleAuthorProfile = ProfileDto(
+          username: articleAuthor.username,
+          bio: articleAuthor.bio,
+          image: articleAuthor.image,
+          following: isArticleAuthorFollowedByUser);
+
+      final articleDto = ArticleDto(
+          slug: article.slug,
+          title: article.title,
+          description: article.description,
+          body: article.body,
+          tagList: article.tagList,
+          createdAt: article.createdAt,
+          updatedAt: article.updatedAt,
+          favorited: isArticleFavoritedByUser,
+          favoritesCount: favoritesCount,
+          author: articleAuthorProfile);
+
+      articlesDtos.add(articleDto);
+    }
+
+    final multipleArticlesDto = MultipleArticlesDto(articles: articlesDtos);
+
+    return Response.ok(jsonEncode(multipleArticlesDto));
+  }
+
   Future<Response> _updateArticle(Request request) async {
     final user = request.context['user'] as User;
 
@@ -266,6 +377,12 @@ class ArticlesRouter {
         Pipeline()
             .addMiddleware(authProvider.optionalAuth())
             .addHandler(_getArticle));
+
+    router.get(
+        '/articles',
+        Pipeline()
+            .addMiddleware(authProvider.optionalAuth())
+            .addHandler(_listArticles));
 
     router.put(
         '/articles/<slug>',
