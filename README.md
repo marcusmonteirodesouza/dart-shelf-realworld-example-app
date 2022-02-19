@@ -27,10 +27,10 @@ Install the [Dart SDK](https://dart.dev/get-dart).
 
 Create a [`.env`](https://github.com/mockturtl/dotenv) file according to the [template](.env.template).
 
-### Run the start script
+### Run the app
 
 ```bash
-$ ./start.sh
+$ ./dev.sh
 ```
 
 ## Running the tests
