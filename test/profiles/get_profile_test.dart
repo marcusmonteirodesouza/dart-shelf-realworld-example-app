@@ -17,7 +17,7 @@ void main() {
 
   group('Caller not authenticated', () {
     test('Should return 200', () async {
-      final profile = await getProfileAndDecode(username: profileUser.username);
+      final profile = await getProfileByUsernameAndDecode(profileUser.username);
 
       expect(profile.username, profileUser.username);
       expect(profile.bio, profileUser.bio);
@@ -28,7 +28,7 @@ void main() {
     test('Given profile does not exist should return 404', () async {
       final username = faker.internet.userName();
 
-      final response = await getProfile(username: username);
+      final response = await getProfileByUsername(username);
 
       expect(response.statusCode, 404);
 
@@ -44,12 +44,11 @@ void main() {
     test('Given caller is following the profile should return 200', () async {
       final caller = await registerRandomUser();
 
-      await followUser(
-          followeeUsername: profileUser.username,
-          followerToken: caller.user.token);
+      await followUserByUsername(profileUser.username,
+          token: caller.user.token);
 
-      final profile = await getProfileAndDecode(
-          username: profileUser.username, token: caller.user.token);
+      final profile = await getProfileByUsernameAndDecode(profileUser.username,
+          token: caller.user.token);
 
       expect(profile.username, profileUser.username);
       expect(profile.bio, profileUser.bio);
@@ -61,8 +60,8 @@ void main() {
         () async {
       final caller = await registerRandomUser();
 
-      final profile = await getProfileAndDecode(
-          username: profileUser.username, token: caller.user.token);
+      final profile = await getProfileByUsernameAndDecode(profileUser.username,
+          token: caller.user.token);
 
       expect(profile.username, profileUser.username);
       expect(profile.bio, profileUser.bio);
@@ -76,7 +75,7 @@ void main() {
       final username = faker.internet.userName();
 
       final response =
-          await getProfile(username: username, token: caller.user.token);
+          await getProfileByUsername(username, token: caller.user.token);
 
       expect(response.statusCode, 404);
 

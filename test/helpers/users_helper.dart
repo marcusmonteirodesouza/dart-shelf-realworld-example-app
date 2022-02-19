@@ -92,7 +92,8 @@ Uri getCurrentUserUri() {
   return Uri.parse(host + '/user');
 }
 
-Future<Response> loginUser(String email, String password) async {
+Future<Response> loginUser(
+    {required String email, required String password}) async {
   final requestData = {
     'user': {'email': email, 'password': password}
   };
@@ -100,8 +101,9 @@ Future<Response> loginUser(String email, String password) async {
   return await post(userLoginUri(), body: jsonEncode(requestData));
 }
 
-Future<UserDto> loginUserAndDecode(String email, String password) async {
-  final response = await loginUser(email, password);
+Future<UserDto> loginUserAndDecode(
+    {required String email, required String password}) async {
+  final response = await loginUser(email: email, password: password);
 
   expect(response.statusCode, 200);
 
@@ -129,9 +131,8 @@ Uri updateUserUri() {
   return Uri.parse(host + '/user');
 }
 
-Future<Response> updateUser(
-    {required String token,
-    String? username,
+Future<Response> updateUser(String token,
+    {String? username,
     String? email,
     String? password,
     String? bio,
@@ -162,15 +163,13 @@ Future<Response> updateUser(
       headers: makeAuthorizationHeader(token), body: jsonEncode(requestData));
 }
 
-Future<UserDto> updateUserAndDecode(
-    {required String token,
-    String? username,
+Future<UserDto> updateUserAndDecode(String token,
+    {String? username,
     String? email,
     String? password,
     String? bio,
     String? image}) async {
-  final response = await updateUser(
-      token: token,
+  final response = await updateUser(token,
       username: username,
       email: email,
       password: password,

@@ -22,7 +22,7 @@ void main() {
       final createdArticle = await createRandomArticleAndDecode(
           author: author, withTagList: false);
 
-      final article = await getArticleAndDecode(slug: createdArticle.slug);
+      final article = await getArticleAndDecodeBySlug(createdArticle.slug);
 
       expect(article.favorited, false);
       expect(article.author.following, false);
@@ -34,14 +34,14 @@ void main() {
     test('Given caller follows the author should return 200', () async {
       final caller = await registerRandomUser();
 
-      await followUserAndDecode(
-          followeeUsername: author.username, followerToken: caller.user.token);
+      await followUserByUsernameAndDecode(author.username,
+          token: caller.user.token);
 
       final createdArticle = await createRandomArticleAndDecode(
           author: author, withTagList: false);
 
-      final article = await getArticleAndDecode(
-          slug: createdArticle.slug, token: caller.user.token);
+      final article = await getArticleAndDecodeBySlug(createdArticle.slug,
+          token: caller.user.token);
 
       expect(article.author.following, true);
       expect(article.slug, createdArticle.slug);
@@ -53,8 +53,8 @@ void main() {
       final createdArticle = await createRandomArticleAndDecode(
           author: author, withTagList: false);
 
-      final article = await getArticleAndDecode(
-          slug: createdArticle.slug, token: caller.user.token);
+      final article = await getArticleAndDecodeBySlug(createdArticle.slug,
+          token: caller.user.token);
 
       expect(article.author.following, false);
       expect(article.toJson(), createdArticle.toJson());
@@ -64,7 +64,7 @@ void main() {
   test('Given article does not exist should return 404', () async {
     final slug = slugify(faker.lorem.sentence());
 
-    final response = await getArticle(slug: slug);
+    final response = await getArticleBySlug(slug);
 
     expect(response.statusCode, 404);
 

@@ -20,11 +20,12 @@ void main() {
   test('Should return 200', () async {
     final caller = await registerRandomUser();
 
-    final profile = await followUserAndDecode(
-        followeeUsername: followee.username, followerToken: caller.user.token);
+    final profile = await followUserByUsernameAndDecode(followee.username,
+        token: caller.user.token);
 
-    final fetchedProfileAfterUpdate = await getProfileAndDecode(
-        username: followee.username, token: caller.user.token);
+    final fetchedProfileAfterUpdate = await getProfileByUsernameAndDecode(
+        followee.username,
+        token: caller.user.token);
 
     expect(fetchedProfileAfterUpdate.following, true);
 
@@ -38,14 +39,14 @@ void main() {
   test('Given caller already follows should return 200', () async {
     final caller = await registerRandomUser();
 
-    await followUser(
-        followeeUsername: followee.username, followerToken: caller.user.token);
+    await followUserByUsername(followee.username, token: caller.user.token);
 
-    final profile = await followUserAndDecode(
-        followeeUsername: followee.username, followerToken: caller.user.token);
+    final profile = await followUserByUsernameAndDecode(followee.username,
+        token: caller.user.token);
 
-    final fetchedProfileAfterUpdate = await getProfileAndDecode(
-        username: followee.username, token: caller.user.token);
+    final fetchedProfileAfterUpdate = await getProfileByUsernameAndDecode(
+        followee.username,
+        token: caller.user.token);
 
     expect(fetchedProfileAfterUpdate.following, true);
 
@@ -60,17 +61,16 @@ void main() {
       () async {
     final caller = await registerRandomUser();
 
-    await followUser(
-        followeeUsername: followee.username, followerToken: caller.user.token);
+    await followUserByUsername(followee.username, token: caller.user.token);
 
-    await unfollowUser(
-        followeeUsername: followee.username, followerToken: caller.user.token);
+    await unfollowUserByUsername(followee.username, token: caller.user.token);
 
-    final profile = await followUserAndDecode(
-        followeeUsername: followee.username, followerToken: caller.user.token);
+    final profile = await followUserByUsernameAndDecode(followee.username,
+        token: caller.user.token);
 
-    final fetchedProfileAfterUpdate = await getProfileAndDecode(
-        username: followee.username, token: caller.user.token);
+    final fetchedProfileAfterUpdate = await getProfileByUsernameAndDecode(
+        followee.username,
+        token: caller.user.token);
 
     expect(fetchedProfileAfterUpdate.following, true);
 
@@ -86,8 +86,8 @@ void main() {
 
     final username = faker.internet.userName();
 
-    final response = await followUser(
-        followeeUsername: username, followerToken: caller.user.token);
+    final response =
+        await followUserByUsername(username, token: caller.user.token);
 
     expect(response.statusCode, 404);
 
@@ -101,9 +101,8 @@ void main() {
   test('Given caller tries to follow himself should return 422', () async {
     final caller = await registerRandomUser();
 
-    final response = await followUser(
-        followeeUsername: caller.user.username,
-        followerToken: caller.user.token);
+    final response = await followUserByUsername(caller.user.username,
+        token: caller.user.token);
 
     expect(response.statusCode, 422);
 
@@ -116,35 +115,35 @@ void main() {
 
   group('authorization', () {
     test('Given no authorization header should return 401', () async {
-      final response = await post(followUserUri(followee.username));
+      final response = await post(followUserByUsernameUri(followee.username));
 
       expect(response.statusCode, 401);
     });
 
     test('Given invalid authorization header should return 401', () async {
       final headers = {'Authorization': 'invalid'};
-      final response =
-          await post(followUserUri(followee.username), headers: headers);
+      final response = await post(followUserByUsernameUri(followee.username),
+          headers: headers);
 
       expect(response.statusCode, 401);
     });
 
     test('Given no token should return 401', () async {
       final headers = {'Authorization': 'Token '};
-      final response =
-          await post(followUserUri(followee.username), headers: headers);
+      final response = await post(followUserByUsernameUri(followee.username),
+          headers: headers);
 
       expect(response.statusCode, 401);
     });
 
     test('Given user is not found should return 401', () async {
       final email = faker.internet.email();
-      final token = makeToken(email);
+      final token = makeTokenWithEmail(email);
 
       final headers = {'Authorization': 'Token $token'};
 
-      final response =
-          await post(followUserUri(followee.username), headers: headers);
+      final response = await post(followUserByUsernameUri(followee.username),
+          headers: headers);
 
       expect(response.statusCode, 401);
     });

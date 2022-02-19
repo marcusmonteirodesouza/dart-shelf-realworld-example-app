@@ -54,7 +54,8 @@ Future<ArticleDto> createArticleAndDecode(
 
   final article = ArticleDto.fromJson(responseJson);
 
-  final authorProfile = await getProfileAndDecode(username: author.username);
+  final authorProfile =
+      await getProfileByUsernameAndDecode(author.username, token: author.token);
 
   final now = DateTime.now();
 
@@ -91,23 +92,23 @@ Future<ArticleDto> createRandomArticleAndDecode(
       taglist: tagList);
 }
 
-Uri getArticleUri(String slug) {
+Uri getArticleBySlugUri(String slug) {
   return Uri.parse(host + '/articles/$slug');
 }
 
-Future<Response> getArticle({required String slug, String? token}) async {
+Future<Response> getArticleBySlug(String slug, {String? token}) async {
   Map<String, String> headers = {};
 
   if (token != null) {
     headers = makeAuthorizationHeader(token);
   }
 
-  return await get(getArticleUri(slug), headers: headers);
+  return await get(getArticleBySlugUri(slug), headers: headers);
 }
 
-Future<ArticleDto> getArticleAndDecode(
-    {required String slug, String? token}) async {
-  final response = await getArticle(slug: slug, token: token);
+Future<ArticleDto> getArticleAndDecodeBySlug(String slug,
+    {String? token}) async {
+  final response = await getArticleBySlug(slug, token: token);
 
   expect(response.statusCode, 200);
 
@@ -116,13 +117,12 @@ Future<ArticleDto> getArticleAndDecode(
   return ArticleDto.fromJson(responseJson);
 }
 
-Uri updateArticleUri(String slug) {
+Uri updateArticleBySlugUri(String slug) {
   return Uri.parse(host + '/articles/$slug');
 }
 
-Future<Response> updateArticle(
-    {required String slug,
-    required String token,
+Future<Response> updateArticleBySlug(String slug,
+    {required String token,
     String? title,
     String? description,
     String? body}) async {
@@ -146,26 +146,32 @@ Future<Response> updateArticle(
 
   final headers = makeAuthorizationHeader(token);
 
-  return await put(updateArticleUri(slug),
+  return await put(updateArticleBySlugUri(slug),
       headers: headers, body: jsonEncode(requestData));
 }
 
-Future<ArticleDto> updateArticleAndDecode(
+Future<ArticleDto> updateArticleBySlugAndDecode(String slug,
     {required String token,
-    required String slug,
     String? title,
     String? description,
     String? body}) async {
-  final response = await updateArticle(
-      token: token,
-      slug: slug,
-      title: title,
-      description: description,
-      body: body);
+  final response = await updateArticleBySlug(slug,
+      token: token, title: title, description: description, body: body);
 
   expect(response.statusCode, 200);
 
   final responseJson = json.decode(response.body);
 
   return ArticleDto.fromJson(responseJson);
+}
+
+Uri deleteArticleBySlugUri(String slug) {
+  return Uri.parse(host + '/articles/$slug');
+}
+
+Future<Response> deleteArticleBySlug(String slug,
+    {required String token}) async {
+  final headers = makeAuthorizationHeader(token);
+
+  return await delete(deleteArticleBySlugUri(slug), headers: headers);
 }

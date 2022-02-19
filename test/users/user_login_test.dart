@@ -11,7 +11,7 @@ void main() {
     final userAndPassword = await registerRandomUser();
 
     final user = await loginUserAndDecode(
-        userAndPassword.user.email, userAndPassword.password);
+        email: userAndPassword.user.email, password: userAndPassword.password);
 
     expect(userAndPassword.user.toJson(), user.toJson());
   });
@@ -73,7 +73,7 @@ void main() {
       final email = faker.internet.userName();
       final password = faker.internet.password();
 
-      final response = await loginUser(email, password);
+      final response = await loginUser(email: email, password: password);
 
       expect(response.statusCode, 401);
       expect(response.body.isEmpty, true);
@@ -99,7 +99,8 @@ void main() {
       final userAndPassword = await registerRandomUser();
       final password = faker.internet.password();
 
-      final response = await loginUser(userAndPassword.user.email, password);
+      final response = await loginUser(
+          email: userAndPassword.user.email, password: password);
 
       expect(response.statusCode, 401);
       expect(response.body.isEmpty, true);

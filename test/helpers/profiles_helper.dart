@@ -7,23 +7,23 @@ import 'package:test/test.dart';
 import '../test_fixtures.dart';
 import 'auth_helper.dart';
 
-Uri getProfileUri(String username) {
+Uri getProfileUriByUsername(String username) {
   return Uri.parse(host + '/profiles/$username');
 }
 
-Future<Response> getProfile({required String username, String? token}) async {
+Future<Response> getProfileByUsername(String username, {String? token}) async {
   Map<String, String> headers = {};
 
   if (token != null) {
     headers = makeAuthorizationHeader(token);
   }
 
-  return await get(getProfileUri(username), headers: headers);
+  return await get(getProfileUriByUsername(username), headers: headers);
 }
 
-Future<ProfileDto> getProfileAndDecode(
-    {required String username, String? token}) async {
-  var response = await getProfile(username: username, token: token);
+Future<ProfileDto> getProfileByUsernameAndDecode(String username,
+    {String? token}) async {
+  var response = await getProfileByUsername(username, token: token);
 
   expect(response.statusCode, 200);
 
@@ -34,21 +34,20 @@ Future<ProfileDto> getProfileAndDecode(
   return profile;
 }
 
-Uri followUserUri(String username) {
+Uri followUserByUsernameUri(String username) {
   return Uri.parse(host + '/profiles/$username/follow');
 }
 
-Future<Response> followUser(
-    {required String followeeUsername, required String followerToken}) async {
-  var headers = makeAuthorizationHeader(followerToken);
+Future<Response> followUserByUsername(String username,
+    {required String token}) async {
+  var headers = makeAuthorizationHeader(token);
 
-  return await post(followUserUri(followeeUsername), headers: headers);
+  return await post(followUserByUsernameUri(username), headers: headers);
 }
 
-Future<ProfileDto> followUserAndDecode(
-    {required String followeeUsername, required String followerToken}) async {
-  var response = await followUser(
-      followeeUsername: followeeUsername, followerToken: followerToken);
+Future<ProfileDto> followUserByUsernameAndDecode(String username,
+    {required String token}) async {
+  var response = await followUserByUsername(username, token: token);
 
   expect(response.statusCode, 200);
 
@@ -61,17 +60,16 @@ Uri unfollowUserUri(String username) {
   return Uri.parse(host + '/profiles/$username/follow');
 }
 
-Future<Response> unfollowUser(
-    {required String followeeUsername, required String followerToken}) async {
-  var headers = makeAuthorizationHeader(followerToken);
+Future<Response> unfollowUserByUsername(String username,
+    {required String token}) async {
+  var headers = makeAuthorizationHeader(token);
 
-  return await delete(unfollowUserUri(followeeUsername), headers: headers);
+  return await delete(unfollowUserUri(username), headers: headers);
 }
 
-Future<ProfileDto> unfollowUserAndDecode(
-    {required String followeeUsername, required String followerToken}) async {
-  var response = await unfollowUser(
-      followeeUsername: followeeUsername, followerToken: followerToken);
+Future<ProfileDto> unfollowUserByUsernameAndDecode(String username,
+    {required String token}) async {
+  var response = await unfollowUserByUsername(username, token: token);
 
   expect(response.statusCode, 200);
 

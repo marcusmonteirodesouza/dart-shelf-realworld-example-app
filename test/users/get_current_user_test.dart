@@ -37,7 +37,7 @@ void main() {
 
     test('Given user is not found should return 401', () async {
       final email = faker.internet.email();
-      final token = makeToken(email);
+      final token = makeTokenWithEmail(email);
 
       final headers = {'Authorization': 'Token $token'};
 
