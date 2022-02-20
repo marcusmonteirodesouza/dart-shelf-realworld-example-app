@@ -1,4 +1,3 @@
-import 'package:dart_shelf_realworld_example_app/src/articles/dtos/article_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/model/article.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/model/favorite.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/already_exists_exception.dart';
