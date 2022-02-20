@@ -153,9 +153,9 @@ class ArticlesService {
 
     if (tag != null) {
       if (sql == initialSql) {
-        sql = sql + ' WHERE tag = @tag';
+        sql = sql + ' WHERE @tag = ANY (tag_list)';
       } else {
-        sql = sql + ' AND tag = @tag';
+        sql = sql + ' AND @tag = ANY (tag_list)';
       }
     }
 

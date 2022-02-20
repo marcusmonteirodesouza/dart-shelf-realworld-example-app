@@ -20,8 +20,7 @@ void main() {
   });
 
   test('Should return 204', () async {
-    final article =
-        await createRandomArticleAndDecode(author: author, withTagList: false);
+    final article = await createRandomArticleAndDecode(author);
 
     final deleteArticleResponse =
         await deleteArticleBySlug(article.slug, token: author.token);
@@ -58,8 +57,7 @@ void main() {
     late ArticleDto article;
 
     setUp(() async {
-      article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      article = await createRandomArticleAndDecode(author);
     });
 
     test('Given no authorization header should return 401', () async {

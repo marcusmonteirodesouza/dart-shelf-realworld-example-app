@@ -159,11 +159,11 @@ class ArticlesRouter {
   }
 
   Future<Response> _listArticles(Request request) async {
-    final tag = request.params['tag'];
-    final authorUsername = request.params['author'];
-    final favoritedByUsername = request.params['favorite'];
-    final limitParam = request.params['limit'];
-    final offsetParam = request.params['offset'];
+    final tag = request.url.queryParameters['tag'];
+    final authorUsername = request.url.queryParameters['author'];
+    final favoritedByUsername = request.url.queryParameters['favorite'];
+    final limitParam = request.url.queryParameters['limit'];
+    final offsetParam = request.url.queryParameters['offset'];
 
     String? authorId;
     if (authorUsername != null) {

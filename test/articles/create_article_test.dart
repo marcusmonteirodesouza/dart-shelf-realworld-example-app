@@ -29,12 +29,8 @@ void main() {
       final tagList =
           faker.lorem.words(faker.randomGenerator.integer(5, min: 1));
 
-      final article = await createArticleAndDecode(
-          author: author,
-          title: title,
-          description: description,
-          body: body,
-          taglist: tagList);
+      final article = await createArticleAndDecode(author,
+          title: title, description: description, body: body, tagList: tagList);
 
       expect(article.tagList, tagList);
     });
@@ -50,26 +46,22 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final article = await createArticleAndDecode(
-          author: author, title: title, description: description, body: body);
+      final article = await createArticleAndDecode(author,
+          title: title, description: description, body: body);
 
       expect(article.tagList.isEmpty, true);
     });
   });
 
   test('Given Article already exists should return 409', () async {
-    final existingArticle =
-        await createRandomArticleAndDecode(author: author, withTagList: false);
+    final existingArticle = await createRandomArticleAndDecode(author);
 
     final description = faker.lorem.sentence();
     final body =
         faker.lorem.sentences(faker.randomGenerator.integer(5, min: 1)).join();
 
-    final response = await createArticle(
-        author: author,
-        title: existingArticle.title,
-        description: description,
-        body: body);
+    final response = await createArticle(author,
+        title: existingArticle.title, description: description, body: body);
 
     expect(response.statusCode, 409);
 
@@ -136,8 +128,8 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final response = await createArticle(
-          author: author, title: title, description: description, body: body);
+      final response = await createArticle(author,
+          title: title, description: description, body: body);
 
       expect(response.statusCode, 422);
 
@@ -157,8 +149,8 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final response = await createArticle(
-          author: author, title: title, description: description, body: body);
+      final response = await createArticle(author,
+          title: title, description: description, body: body);
 
       expect(response.statusCode, 422);
 
@@ -205,8 +197,8 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final response = await createArticle(
-          author: author, title: title, description: description, body: body);
+      final response = await createArticle(author,
+          title: title, description: description, body: body);
 
       expect(response.statusCode, 422);
 
@@ -224,8 +216,8 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final response = await createArticle(
-          author: author, title: title, description: description, body: body);
+      final response = await createArticle(author,
+          title: title, description: description, body: body);
 
       expect(response.statusCode, 422);
 
@@ -272,8 +264,8 @@ void main() {
           .join();
       final body = '';
 
-      final response = await createArticle(
-          author: author, title: title, description: description, body: body);
+      final response = await createArticle(author,
+          title: title, description: description, body: body);
 
       expect(response.statusCode, 422);
 
@@ -291,8 +283,8 @@ void main() {
           .join();
       final body = ' ';
 
-      final response = await createArticle(
-          author: author, title: title, description: description, body: body);
+      final response = await createArticle(author,
+          title: title, description: description, body: body);
 
       expect(response.statusCode, 422);
 

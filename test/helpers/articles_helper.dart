@@ -15,12 +15,11 @@ Uri createArticleUri() {
   return Uri.parse(host + '/articles');
 }
 
-Future<Response> createArticle(
-    {required UserDto author,
-    required String title,
+Future<Response> createArticle(UserDto author,
+    {required String title,
     required String description,
     required String body,
-    List<String>? taglist}) async {
+    List<String>? tagList}) async {
   final headers = makeAuthorizationHeader(author.token);
 
   final requestData = {
@@ -28,7 +27,7 @@ Future<Response> createArticle(
       'title': title,
       'description': description,
       'body': body,
-      'tagList': taglist
+      'tagList': tagList
     }
   };
 
@@ -36,18 +35,13 @@ Future<Response> createArticle(
       headers: headers, body: jsonEncode(requestData));
 }
 
-Future<ArticleDto> createArticleAndDecode(
-    {required UserDto author,
-    required String title,
+Future<ArticleDto> createArticleAndDecode(UserDto author,
+    {required String title,
     required String description,
     required String body,
-    List<String>? taglist}) async {
-  final response = await createArticle(
-      author: author,
-      title: title,
-      description: description,
-      body: body,
-      taglist: taglist);
+    List<String>? tagList}) async {
+  final response = await createArticle(author,
+      title: title, description: description, body: body, tagList: tagList);
 
   expect(response.statusCode, 201);
 
@@ -71,26 +65,19 @@ Future<ArticleDto> createArticleAndDecode(
   return article;
 }
 
-Future<ArticleDto> createRandomArticleAndDecode(
-    {required UserDto author, required bool withTagList}) async {
-  final title = faker.lorem.sentence();
-  final description =
+Future<ArticleDto> createRandomArticleAndDecode(UserDto author,
+    {String? title,
+    String? description,
+    String? body,
+    List<String>? tagList}) async {
+  title ??= faker.lorem.sentence();
+  description ??=
       faker.lorem.sentences(faker.randomGenerator.integer(3, min: 1)).join();
-  final body =
+  body ??=
       faker.lorem.sentences(faker.randomGenerator.integer(20, min: 1)).join();
 
-  List<String>? tagList;
-
-  if (withTagList) {
-    tagList = faker.lorem.words(faker.randomGenerator.integer(5, min: 1));
-  }
-
-  return await createArticleAndDecode(
-      author: author,
-      title: title,
-      description: description,
-      body: body,
-      taglist: tagList);
+  return await createArticleAndDecode(author,
+      title: title, description: description, body: body, tagList: tagList);
 }
 
 Uri getArticleBySlugUri(String slug) {
