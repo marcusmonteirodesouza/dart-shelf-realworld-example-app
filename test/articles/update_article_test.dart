@@ -21,8 +21,7 @@ void main() {
 
   group('Given title', () {
     test('Should also update slug and return 200', () async {
-      final article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final article = await createRandomArticleAndDecode(author);
 
       final title = faker.lorem.sentence();
 
@@ -46,8 +45,7 @@ void main() {
     });
 
     test('Given title is empty should return 422', () async {
-      final article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final article = await createRandomArticleAndDecode(author);
 
       final uri = Uri.parse(host + '/articles/${article.slug}');
 
@@ -72,8 +70,7 @@ void main() {
     });
 
     test('Given title is whitespace should return 422', () async {
-      final article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final article = await createRandomArticleAndDecode(author);
 
       final uri = Uri.parse(host + '/articles/${article.slug}');
 
@@ -100,8 +97,7 @@ void main() {
 
   group('Given description', () {
     test('Should return 200', () async {
-      final article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final article = await createRandomArticleAndDecode(author);
 
       final description = faker.lorem
           .sentences(faker.randomGenerator.integer(10, min: 1))
@@ -127,8 +123,7 @@ void main() {
     });
 
     test('Given description is empty should return 422', () async {
-      final article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final article = await createRandomArticleAndDecode(author);
 
       final uri = Uri.parse(host + '/articles/${article.slug}');
 
@@ -153,8 +148,7 @@ void main() {
     });
 
     test('Given description is whitespace should return 422', () async {
-      final article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final article = await createRandomArticleAndDecode(author);
 
       final uri = Uri.parse(host + '/articles/${article.slug}');
 
@@ -181,8 +175,7 @@ void main() {
 
   group('Given body', () {
     test('Should return 200', () async {
-      final article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final article = await createRandomArticleAndDecode(author);
 
       final body = faker.lorem
           .sentences(faker.randomGenerator.integer(10, min: 1))
@@ -208,8 +201,7 @@ void main() {
     });
 
     test('Given body is empty should return 422', () async {
-      final article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final article = await createRandomArticleAndDecode(author);
 
       final uri = Uri.parse(host + '/articles/${article.slug}');
 
@@ -234,8 +226,7 @@ void main() {
     });
 
     test('Given title is whitespace should return 422', () async {
-      final article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final article = await createRandomArticleAndDecode(author);
 
       final uri = Uri.parse(host + '/articles/${article.slug}');
 
@@ -264,8 +255,7 @@ void main() {
     late ArticleDto article;
 
     setUp(() async {
-      article = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      article = await createRandomArticleAndDecode(author);
     });
 
     test('Given no authorization header should return 401', () async {

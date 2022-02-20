@@ -19,34 +19,27 @@ void main() {
     author = (await registerRandomUserAndUpdateBioAndImage()).user;
   });
 
-  test('Should return 204', () async {
+  test('Should return 200', () async {
     final article = await createRandomArticleAndDecode(author);
 
-    final deleteArticleResponse =
-        await deleteArticleBySlug(article.slug, token: author.token);
+    final favoritedArticle =
+        await favoriteArticleAndDecode(article.slug, token: author.token);
 
-    expect(deleteArticleResponse.statusCode, 204);
+    final fetchedArticle =
+        await getArticleAndDecodeBySlug(article.slug, token: author.token);
 
-    final getArticleResponse = await getArticleBySlug(article.slug);
-
-    expect(getArticleResponse.statusCode, 404);
-
-    final responseJson = jsonDecode(getArticleResponse.body);
-
-    final error = ErrorDto.fromJson(responseJson);
-
-    expect(error.errors[0], 'Article not found');
+    expect(favoritedArticle.favorited, true);
+    expect(favoritedArticle.toJson(), fetchedArticle.toJson());
   });
 
-  test('Given Article does not exists should return 404', () async {
+  test('Given article does not exists should return 404', () async {
     final slug = slugify(faker.lorem.sentence());
 
-    final deleteArticleResponse =
-        await deleteArticleBySlug(slug, token: author.token);
+    final response = await favoriteArticle(slug, token: author.token);
 
-    expect(deleteArticleResponse.statusCode, 404);
+    expect(response.statusCode, 404);
 
-    final responseJson = jsonDecode(deleteArticleResponse.body);
+    final responseJson = jsonDecode(response.body);
 
     final error = ErrorDto.fromJson(responseJson);
 
@@ -61,7 +54,7 @@ void main() {
     });
 
     test('Given no authorization header should return 401', () async {
-      final response = await delete(deleteArticleBySlugUri(article.slug));
+      final response = await post(favoriteArticleUri(article.slug));
 
       expect(response.statusCode, 401);
     });
@@ -69,7 +62,7 @@ void main() {
     test('Given invalid authorization header should return 401', () async {
       final headers = {'Authorization': 'invalid'};
       final response =
-          await delete(deleteArticleBySlugUri(article.slug), headers: headers);
+          await post(favoriteArticleUri(article.slug), headers: headers);
 
       expect(response.statusCode, 401);
     });
@@ -89,18 +82,9 @@ void main() {
       final headers = {'Authorization': 'Token $token'};
 
       final response =
-          await delete(deleteArticleBySlugUri(article.slug), headers: headers);
+          await post(favoriteArticleUri(article.slug), headers: headers);
 
       expect(response.statusCode, 401);
-    });
-
-    test('Given wrong token should return 403', () async {
-      final anotherUser = await registerRandomUser();
-
-      final response = await deleteArticleBySlug(article.slug,
-          token: anotherUser.user.token);
-
-      expect(response.statusCode, 403);
     });
   });
 }

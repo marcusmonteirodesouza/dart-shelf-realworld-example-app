@@ -52,7 +52,7 @@ class ProfilesService {
     String sql;
     if (hasDeletedFollow) {
       sql =
-          'UPDATE $followsTable SET deleted_at = NULL, created_at = current_timestamp WHERE follower_id = @followerId AND followee_id = @followeeId RETURNING id, created_at, updated_at, deleted_at';
+          'UPDATE $followsTable SET deleted_at = NULL, updated_at = current_timestamp WHERE follower_id = @followerId AND followee_id = @followeeId RETURNING id, created_at, updated_at, deleted_at';
     } else {
       sql =
           'INSERT INTO $followsTable(follower_id, followee_id) VALUES (@followerId, @followeeId) RETURNING id, created_at, updated_at, deleted_at;';
@@ -109,12 +109,26 @@ class ProfilesService {
 
   Future<Follow?> getFollowByFollowerAndFollowee(
       {required String followerId, required String followeeId}) async {
+    final follower = await usersService.getUserById(followerId);
+
+    if (follower == null) {
+      throw ArgumentException(
+          message: 'Follower not found', parameterName: 'followerId');
+    }
+
+    final followee = await usersService.getUserById(followeeId);
+
+    if (followee == null) {
+      throw ArgumentException(
+          message: 'Followee not found', parameterName: 'followeeId');
+    }
+
     final sql =
         'SELECT id FROM $followsTable WHERE follower_id = @followerId AND followee_id = @followeeId AND deleted_at IS NULL;';
 
     final result = await connection.query(sql, substitutionValues: {
-      'followerId': followerId,
-      'followeeId': followeeId
+      'followerId': follower.id,
+      'followeeId': followee.id
     });
 
     if (result.isEmpty) {

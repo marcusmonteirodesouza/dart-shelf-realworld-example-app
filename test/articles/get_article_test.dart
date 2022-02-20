@@ -19,8 +19,8 @@ void main() {
 
   group('Given caller not authenticated', () {
     test('Should return 200', () async {
-      final createdArticle = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final createdArticle = await createRandomArticleAndDecode(author,
+          tagList: faker.lorem.words(faker.randomGenerator.integer(5, min: 1)));
 
       final article = await getArticleAndDecodeBySlug(createdArticle.slug);
 
@@ -37,8 +37,8 @@ void main() {
       await followUserByUsernameAndDecode(author.username,
           token: caller.user.token);
 
-      final createdArticle = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final createdArticle = await createRandomArticleAndDecode(author,
+          tagList: faker.lorem.words(faker.randomGenerator.integer(5, min: 1)));
 
       final article = await getArticleAndDecodeBySlug(createdArticle.slug,
           token: caller.user.token);
@@ -50,14 +50,38 @@ void main() {
     test('Given caller does not follow the author should return 200', () async {
       final caller = await registerRandomUser();
 
-      final createdArticle = await createRandomArticleAndDecode(
-          author: author, withTagList: false);
+      final createdArticle = await createRandomArticleAndDecode(author);
 
       final article = await getArticleAndDecodeBySlug(createdArticle.slug,
           token: caller.user.token);
 
       expect(article.author.following, false);
       expect(article.toJson(), createdArticle.toJson());
+    });
+
+    test('Given caller has favorited the article should return 200', () async {
+      final caller = await registerRandomUser();
+
+      final createdArticle = await createRandomArticleAndDecode(author);
+
+      await favoriteArticle(createdArticle.slug, token: caller.user.token);
+
+      final article = await getArticleAndDecodeBySlug(createdArticle.slug,
+          token: caller.user.token);
+
+      expect(article.favorited, true);
+    });
+
+    test('Given caller has not favorited the article should return 200',
+        () async {
+      final caller = await registerRandomUser();
+
+      final createdArticle = await createRandomArticleAndDecode(author);
+
+      final article = await getArticleAndDecodeBySlug(createdArticle.slug,
+          token: caller.user.token);
+
+      expect(article.favorited, false);
     });
   });
 

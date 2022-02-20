@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/article_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_articles_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/dtos/user_dto.dart';
 import 'package:http/http.dart';
 import 'package:slugify/slugify.dart';
@@ -14,12 +15,11 @@ Uri createArticleUri() {
   return Uri.parse(host + '/articles');
 }
 
-Future<Response> createArticle(
-    {required UserDto author,
-    required String title,
+Future<Response> createArticle(UserDto author,
+    {required String title,
     required String description,
     required String body,
-    List<String>? taglist}) async {
+    List<String>? tagList}) async {
   final headers = makeAuthorizationHeader(author.token);
 
   final requestData = {
@@ -27,7 +27,7 @@ Future<Response> createArticle(
       'title': title,
       'description': description,
       'body': body,
-      'tagList': taglist
+      'tagList': tagList
     }
   };
 
@@ -35,18 +35,13 @@ Future<Response> createArticle(
       headers: headers, body: jsonEncode(requestData));
 }
 
-Future<ArticleDto> createArticleAndDecode(
-    {required UserDto author,
-    required String title,
+Future<ArticleDto> createArticleAndDecode(UserDto author,
+    {required String title,
     required String description,
     required String body,
-    List<String>? taglist}) async {
-  final response = await createArticle(
-      author: author,
-      title: title,
-      description: description,
-      body: body,
-      taglist: taglist);
+    List<String>? tagList}) async {
+  final response = await createArticle(author,
+      title: title, description: description, body: body, tagList: tagList);
 
   expect(response.statusCode, 201);
 
@@ -70,26 +65,20 @@ Future<ArticleDto> createArticleAndDecode(
   return article;
 }
 
-Future<ArticleDto> createRandomArticleAndDecode(
-    {required UserDto author, required bool withTagList}) async {
-  final title = faker.lorem.sentence();
-  final description =
-      faker.lorem.sentences(faker.randomGenerator.integer(3, min: 1)).join();
-  final body =
+Future<ArticleDto> createRandomArticleAndDecode(UserDto author,
+    {String? title,
+    String? description,
+    String? body,
+    List<String>? tagList}) async {
+  title ??=
+      faker.lorem.sentences(faker.randomGenerator.integer(4, min: 1)).join(' ');
+  description ??=
+      faker.lorem.sentences(faker.randomGenerator.integer(8, min: 1)).join();
+  body ??=
       faker.lorem.sentences(faker.randomGenerator.integer(20, min: 1)).join();
 
-  List<String>? tagList;
-
-  if (withTagList) {
-    tagList = faker.lorem.words(faker.randomGenerator.integer(5, min: 1));
-  }
-
-  return await createArticleAndDecode(
-      author: author,
-      title: title,
-      description: description,
-      body: body,
-      taglist: tagList);
+  return await createArticleAndDecode(author,
+      title: title, description: description, body: body, tagList: tagList);
 }
 
 Uri getArticleBySlugUri(String slug) {
@@ -115,6 +104,88 @@ Future<ArticleDto> getArticleAndDecodeBySlug(String slug,
   final responseJson = jsonDecode(response.body);
 
   return ArticleDto.fromJson(responseJson);
+}
+
+Uri listArticlesUri(
+    {String? tag,
+    String? author,
+    String? favoritedByUsername,
+    int? limit,
+    int? offset}) {
+  Map<String, dynamic> queryParameters = {};
+
+  if (tag != null) {
+    queryParameters['tag'] = tag;
+  }
+
+  if (author != null) {
+    queryParameters['author'] = author;
+  }
+
+  if (favoritedByUsername != null) {
+    queryParameters['favorited'] = favoritedByUsername;
+  }
+
+  if (limit != null) {
+    queryParameters['limit'] = limit.toString();
+  }
+
+  if (offset != null) {
+    queryParameters['offset'] = offset.toString();
+  }
+
+  if (Uri.parse(host).isScheme('http')) {
+    return Uri.http(authority, '/$apiPath/articles', queryParameters);
+  } else if (Uri.parse(host).isScheme('https')) {
+    return Uri.https(authority, '/$apiPath/articles', queryParameters);
+  } else {
+    throw UnsupportedError('Unsupported host scheme ${Uri.parse(host).scheme}');
+  }
+}
+
+Future<Response> listArticles(
+    {String? token,
+    String? tag,
+    String? author,
+    String? favoritedByUsername,
+    int? limit,
+    int? offset}) async {
+  Map<String, String> headers = {};
+
+  if (token != null) {
+    headers = makeAuthorizationHeader(token);
+  }
+
+  return await get(
+      listArticlesUri(
+          tag: tag,
+          author: author,
+          favoritedByUsername: favoritedByUsername,
+          limit: limit,
+          offset: offset),
+      headers: headers);
+}
+
+Future<MultipleArticlesDto> listArticlesAndDecode(
+    {String? token,
+    String? tag,
+    String? author,
+    String? favoritedByUsername,
+    int? limit,
+    int? offset}) async {
+  final response = await listArticles(
+      token: token,
+      tag: tag,
+      author: author,
+      favoritedByUsername: favoritedByUsername,
+      limit: limit,
+      offset: offset);
+
+  expect(response.statusCode, 200);
+
+  final responseJson = jsonDecode(response.body);
+
+  return MultipleArticlesDto.fromJson(responseJson);
 }
 
 Uri updateArticleBySlugUri(String slug) {
@@ -174,4 +245,25 @@ Future<Response> deleteArticleBySlug(String slug,
   final headers = makeAuthorizationHeader(token);
 
   return await delete(deleteArticleBySlugUri(slug), headers: headers);
+}
+
+Uri favoriteArticleUri(String slug) {
+  return Uri.parse(host + '/articles/$slug/favorite');
+}
+
+Future<Response> favoriteArticle(String slug, {required String token}) async {
+  final headers = makeAuthorizationHeader(token);
+
+  return await post(favoriteArticleUri(slug), headers: headers);
+}
+
+Future<ArticleDto> favoriteArticleAndDecode(String slug,
+    {required String token}) async {
+  final response = await favoriteArticle(slug, token: token);
+
+  expect(response.statusCode, 200);
+
+  final responseJson = json.decode(response.body);
+
+  return ArticleDto.fromJson(responseJson);
 }
