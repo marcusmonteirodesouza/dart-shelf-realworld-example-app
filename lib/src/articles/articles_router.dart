@@ -82,7 +82,7 @@ class ArticlesRouter {
       return Response(409, body: jsonEncode(ErrorDto(errors: [e.message])));
     }
 
-    final authorProfile = await getProfileByUserId(user.id);
+    final authorProfile = await _getProfileByUserId(user.id);
 
     final articleDto = ArticleDto(
         slug: article.slug,
@@ -120,10 +120,12 @@ class ArticlesRouter {
     }
 
     final authorProfile =
-        await getProfileByUserId(article.authorId, follower: user);
+        await _getProfileByUserId(article.authorId, follower: user);
 
-    var favorited = false;
-    if (user != null) {
+    bool favorited;
+    if (user == null) {
+      favorited = false;
+    } else {
       favorited = await articlesService.isFavorited(
           userId: user.id, articleId: article.id);
     }
@@ -234,7 +236,7 @@ class ArticlesRouter {
       }
 
       final authorProfile =
-          await getProfileByUserId(article.authorId, follower: user);
+          await _getProfileByUserId(article.authorId, follower: user);
 
       final articleDto = ArticleDto(
           slug: article.slug,
@@ -304,7 +306,7 @@ class ArticlesRouter {
     }
 
     final authorProfile =
-        await getProfileByUserId(article.authorId, follower: user);
+        await _getProfileByUserId(article.authorId, follower: user);
 
     final articleDto = ArticleDto(
         slug: updatedArticle.slug,
@@ -372,7 +374,7 @@ class ArticlesRouter {
     await articlesService.createFavorite(
         userId: user.id, articleId: article.id);
 
-    final authorProfile = await getProfileByUserId(author.id, follower: user);
+    final authorProfile = await _getProfileByUserId(author.id, follower: user);
 
     final articleDto = ArticleDto(
         slug: article.slug,
@@ -390,7 +392,46 @@ class ArticlesRouter {
     return Response.ok(json.encode(articleDto));
   }
 
-  Future<ProfileDto> getProfileByUserId(String userId, {User? follower}) async {
+  Future<Response> _unFavoriteArticle(Request request) async {
+    final user = request.context['user'] as User;
+
+    final slug = request.params['slug'];
+
+    if (slug == null) {
+      throw AssertionError('slug must be in the request params');
+    }
+
+    var article = await articlesService.getArticleBySlug(slug);
+
+    if (article == null) {
+      return Response.notFound(
+          jsonEncode(ErrorDto(errors: ['Article not found'])));
+    }
+
+    await articlesService.deleteFavoriteByUserIdAndArticleId(
+        userId: user.id, articleId: article.id);
+
+    final authorProfile =
+        await _getProfileByUserId(article.authorId, follower: user);
+
+    final articleDto = ArticleDto(
+        slug: article.slug,
+        title: article.title,
+        description: article.description,
+        body: article.body,
+        tagList: article.tagList,
+        createdAt: article.createdAt,
+        updatedAt: article.updatedAt,
+        favorited: await articlesService.isFavorited(
+            userId: user.id, articleId: article.id),
+        favoritesCount: await articlesService.getFavoritesCount(article.id),
+        author: authorProfile);
+
+    return Response.ok(jsonEncode(articleDto));
+  }
+
+  Future<ProfileDto> _getProfileByUserId(String userId,
+      {User? follower}) async {
     final user = await usersService.getUserById(userId);
 
     if (user == null) {
@@ -448,6 +489,12 @@ class ArticlesRouter {
         Pipeline()
             .addMiddleware(authProvider.requireAuth())
             .addHandler(_deleteArticle));
+
+    router.delete(
+        '/articles/<slug>/favorite',
+        Pipeline()
+            .addMiddleware(authProvider.requireAuth())
+            .addHandler(_unFavoriteArticle));
 
     return router;
   }

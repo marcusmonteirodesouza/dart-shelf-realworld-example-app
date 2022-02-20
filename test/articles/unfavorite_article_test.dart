@@ -27,12 +27,17 @@ void main() {
     final favoritedArticle =
         await favoriteArticleAndDecodeBySlug(article.slug, token: caller.token);
 
+    final unfavoritedArticle = await unFavoriteArticleAndDecodeBySlug(
+        article.slug,
+        token: caller.token);
+
     final fetchedArticle =
         await getArticleAndDecodeBySlug(article.slug, token: caller.token);
 
-    expect(favoritedArticle.favorited, true);
-    expect(favoritedArticle.favoritesCount, article.favoritesCount + 1);
-    expect(favoritedArticle.toJson(), fetchedArticle.toJson());
+    expect(unfavoritedArticle.favorited, false);
+    expect(
+        unfavoritedArticle.favoritesCount, favoritedArticle.favoritesCount - 1);
+    expect(unfavoritedArticle.toJson(), fetchedArticle.toJson());
   });
 
   test('Given article previously unfavorited should return 200', () async {
@@ -40,23 +45,22 @@ void main() {
 
     await favoriteArticleBySlug(article.slug, token: caller.token);
 
-    await unFavoriteArticleBySlug(article.slug, token: caller.token);
+    final unfavoritedArticleFirstCall = await unFavoriteArticleAndDecodeBySlug(
+        article.slug,
+        token: caller.token);
 
-    final favoritedArticle =
-        await favoriteArticleAndDecodeBySlug(article.slug, token: caller.token);
+    final unfavoritedArticleSecondCall = await unFavoriteArticleAndDecodeBySlug(
+        article.slug,
+        token: caller.token);
 
-    final fetchedArticle =
-        await getArticleAndDecodeBySlug(article.slug, token: caller.token);
-
-    expect(favoritedArticle.favorited, true);
-    expect(favoritedArticle.favoritesCount, article.favoritesCount + 1);
-    expect(favoritedArticle.toJson(), fetchedArticle.toJson());
+    expect(unfavoritedArticleSecondCall.toJson(),
+        unfavoritedArticleFirstCall.toJson());
   });
 
   test('Given article does not exists should return 404', () async {
     final slug = slugify(faker.lorem.sentence());
 
-    final response = await favoriteArticleBySlug(slug, token: caller.token);
+    final response = await unFavoriteArticleBySlug(slug, token: caller.token);
 
     expect(response.statusCode, 404);
 
@@ -75,7 +79,7 @@ void main() {
     });
 
     test('Given no authorization header should return 401', () async {
-      final response = await post(favoriteArticleUri(article.slug));
+      final response = await delete(unFavoriteArticleUri(article.slug));
 
       expect(response.statusCode, 401);
     });
@@ -83,7 +87,7 @@ void main() {
     test('Given invalid authorization header should return 401', () async {
       final headers = {'Authorization': 'invalid'};
       final response =
-          await post(favoriteArticleUri(article.slug), headers: headers);
+          await delete(unFavoriteArticleUri(article.slug), headers: headers);
 
       expect(response.statusCode, 401);
     });
@@ -91,7 +95,7 @@ void main() {
     test('Given no token should return 401', () async {
       final headers = {'Authorization': 'Token '};
       final response =
-          await post(favoriteArticleUri(article.slug), headers: headers);
+          await delete(unFavoriteArticleUri(article.slug), headers: headers);
 
       expect(response.statusCode, 401);
     });
@@ -103,7 +107,7 @@ void main() {
       final headers = {'Authorization': 'Token $token'};
 
       final response =
-          await post(favoriteArticleUri(article.slug), headers: headers);
+          await delete(unFavoriteArticleUri(article.slug), headers: headers);
 
       expect(response.statusCode, 401);
     });

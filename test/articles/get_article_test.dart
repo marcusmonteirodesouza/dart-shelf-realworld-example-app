@@ -64,7 +64,8 @@ void main() {
 
       final createdArticle = await createRandomArticleAndDecode(author);
 
-      await favoriteArticle(createdArticle.slug, token: caller.user.token);
+      await favoriteArticleBySlug(createdArticle.slug,
+          token: caller.user.token);
 
       final article = await getArticleAndDecodeBySlug(createdArticle.slug,
           token: caller.user.token);
