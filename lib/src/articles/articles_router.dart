@@ -7,6 +7,7 @@ import 'package:dart_shelf_realworld_example_app/src/articles/model/article.dart
 import 'package:dart_shelf_realworld_example_app/src/common/errors/dtos/error_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/already_exists_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/argument_exception.dart';
+import 'package:dart_shelf_realworld_example_app/src/common/misc/order_by.dart';
 import 'package:dart_shelf_realworld_example_app/src/profiles/dtos/profile_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/profiles/profiles_service.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/users_service.dart';
@@ -198,6 +199,8 @@ class ArticlesRouter {
         return Response(422,
             body: jsonEncode(ErrorDto(errors: ['Invalid limit'])));
       }
+    } else {
+      limit = 20; // Default
     }
 
     int? offset;
@@ -210,12 +213,15 @@ class ArticlesRouter {
       }
     }
 
+    final orderBy = OrderBy(property: 'created_at', order: Order.desc);
+
     final articles = await articlesService.listArticles(
         tag: tag,
         authorId: authorId,
         favoritedByUserId: favoritedByUserId,
         limit: limit,
-        offset: offset);
+        offset: offset,
+        orderBy: orderBy);
 
     final articlesDtos = <ArticleDto>[];
 

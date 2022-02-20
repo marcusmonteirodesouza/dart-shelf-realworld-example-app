@@ -3,6 +3,7 @@ import 'package:dart_shelf_realworld_example_app/src/articles/model/favorite.dar
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/already_exists_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/argument_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/not_found_exception.dart';
+import 'package:dart_shelf_realworld_example_app/src/common/misc/order_by.dart';
 import 'package:postgres/postgres.dart';
 import 'package:slugify/slugify.dart';
 
@@ -145,18 +146,13 @@ class ArticlesService {
       String? authorId,
       String? favoritedByUserId,
       int? limit,
-      int? offset}) async {
-    final initialSql =
-        'SELECT id, author_id, title, description, body, tag_list, slug, created_at, updated_at, deleted_at FROM $articlesTable a';
-
-    var sql = initialSql;
+      int? offset,
+      OrderBy? orderBy}) async {
+    var sql =
+        'SELECT id, author_id, title, description, body, tag_list, slug, created_at, updated_at, deleted_at FROM $articlesTable a WHERE deleted_at IS NULL';
 
     if (tag != null) {
-      if (sql == initialSql) {
-        sql = sql + ' WHERE @tag = ANY (tag_list)';
-      } else {
-        sql = sql + ' AND @tag = ANY (tag_list)';
-      }
+      sql = sql + ' AND @tag = ANY (tag_list)';
     }
 
     if (authorId != null) {
@@ -166,11 +162,7 @@ class ArticlesService {
         throw NotFoundException(message: 'Author not found');
       }
 
-      if (sql == initialSql) {
-        sql = sql + ' WHERE author_id = @authorId';
-      } else {
-        sql = sql + ' AND author_id = @authorId';
-      }
+      sql = sql + ' AND author_id = @authorId';
     }
 
     if (favoritedByUserId != null) {
@@ -180,14 +172,37 @@ class ArticlesService {
         throw NotFoundException(message: 'User not found');
       }
 
-      if (sql == initialSql) {
-        sql = sql +
-            ' WHERE EXISTS (SELECT 1 FROM $favoritesTable f WHERE a.id = f.article_id AND f.user_id = @favoritedByUserId)';
-      } else {
-        sql = sql +
-            ' AND EXISTS (SELECT 1 FROM $favoritesTable f WHERE a.id = f.article_id AND f.user_id = @favoritedByUserId)';
-      }
+      sql = sql +
+          ' AND EXISTS (SELECT 1 FROM $favoritesTable f WHERE a.id = f.article_id AND f.user_id = @favoritedByUserId)';
     }
+
+    // See https://www.postgresql.org/docs/current/queries-limit.html
+    final defaultOrderBy = OrderBy(property: 'created_at', order: Order.desc);
+
+    if (orderBy != null) {
+      final columns = [
+        'id',
+        'author_id',
+        'title',
+        'description',
+        'body',
+        'tag_list',
+        'slug',
+        'created_at',
+        'updated_at',
+        'deleted_at'
+      ];
+
+      if (!columns.contains(orderBy.property)) {
+        throw ArgumentException(
+            message: 'Invalid orderBy. Must be one of ${columns.join(", ")}',
+            parameterName: 'orderBy');
+      }
+    } else {
+      orderBy = defaultOrderBy;
+    }
+
+    sql = sql + ' ORDER BY ${orderBy.property} ${orderBy.order.name}';
 
     if (limit != null) {
       if (limit < 0) {
@@ -195,7 +210,7 @@ class ArticlesService {
             message: 'limit must be positive', parameterName: 'limit');
       }
 
-      sql = sql + ' LIMIT @limit';
+      sql = sql + ' LIMIT $limit';
     }
 
     if (offset != null) {
@@ -204,15 +219,15 @@ class ArticlesService {
             message: 'offset must be positive', parameterName: 'offset');
       }
 
-      sql = sql + ' OFFSET @offset';
+      sql = sql + ' OFFSET $offset';
     }
+
+    sql = sql + ';';
 
     final result = await connection.query(sql, substitutionValues: {
       'tag': tag,
       'authorId': authorId,
       'favoritedByUserId': favoritedByUserId,
-      'limit': limit,
-      'offset': offset
     });
 
     final articles = <Article>[];

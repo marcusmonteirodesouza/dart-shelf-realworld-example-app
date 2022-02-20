@@ -14,6 +14,28 @@ void main() {
     author2 = (await registerRandomUserAndUpdateBioAndImage()).user;
   });
 
+  test('Should order by the most recent articles first', () async {
+    final author1Article = await createRandomArticleAndDecode(author1,
+        tagList: faker.lorem.words(faker.randomGenerator.integer(5, min: 1)));
+
+    final author2Article = await createRandomArticleAndDecode(author2);
+
+    final articles = await listArticlesAndDecode();
+
+    expect(articles.articles[0].slug, author2Article.slug);
+    expect(articles.articles[1].slug, author1Article.slug);
+  });
+
+  test('Should limit to 20 articles by default', () async {
+    for (var i = 0; i <= 21; i++) {
+      await createRandomArticleAndDecode(author1);
+    }
+
+    final articles = await listArticlesAndDecode();
+
+    expect(articles.articles.length, 20);
+  });
+
   group('Given no filters', () {
     test('Should return 200', () async {
       final author1Article = await createRandomArticleAndDecode(author1,
