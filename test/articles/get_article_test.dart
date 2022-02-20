@@ -58,6 +58,31 @@ void main() {
       expect(article.author.following, false);
       expect(article.toJson(), createdArticle.toJson());
     });
+
+    test('Given caller has favorited the article should return 200', () async {
+      final caller = await registerRandomUser();
+
+      final createdArticle = await createRandomArticleAndDecode(author);
+
+      await favoriteArticle(createdArticle.slug, token: caller.user.token);
+
+      final article = await getArticleAndDecodeBySlug(createdArticle.slug,
+          token: caller.user.token);
+
+      expect(article.favorited, true);
+    });
+
+    test('Given caller has not favorited the article should return 200',
+        () async {
+      final caller = await registerRandomUser();
+
+      final createdArticle = await createRandomArticleAndDecode(author);
+
+      final article = await getArticleAndDecodeBySlug(createdArticle.slug,
+          token: caller.user.token);
+
+      expect(article.favorited, false);
+    });
   });
 
   test('Given article does not exist should return 404', () async {
