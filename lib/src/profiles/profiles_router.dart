@@ -25,7 +25,7 @@ class ProfilesRouter {
     final profileUsername = request.params['username'];
 
     if (profileUsername == null) {
-      throw UnsupportedError('username must be in the request params');
+      throw AssertionError('username must be in the request params');
     }
 
     final profileUser = await usersService.getUserByUsername(profileUsername);
@@ -59,7 +59,7 @@ class ProfilesRouter {
     final followeeUsername = request.params['username'];
 
     if (followeeUsername == null) {
-      throw UnsupportedError('username must be in the request params');
+      throw AssertionError('username must be in the request params');
     }
 
     final followee = await usersService.getUserByUsername(followeeUsername);
@@ -89,7 +89,7 @@ class ProfilesRouter {
     final followeeUsername = request.params['username'];
 
     if (followeeUsername == null) {
-      throw UnsupportedError('username must be in the request params');
+      throw AssertionError('username must be in the request params');
     }
 
     final followee = await usersService.getUserByUsername(followeeUsername);

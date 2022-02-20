@@ -54,7 +54,7 @@ class ArticlesService {
     String sql;
     if (hasDeletedArticle) {
       sql =
-          'UPDATE $articlesTable SET deleted_at = NULL, created_at = current_timestamp WHERE slug = @slug RETURNING id, created_at, updated_at, deleted_at';
+          'UPDATE $articlesTable SET deleted_at = NULL, updated_at = current_timestamp WHERE slug = @slug RETURNING id, created_at, updated_at, deleted_at';
     } else {
       sql =
           'INSERT INTO $articlesTable(author_id, title, description, body, tag_list, slug) VALUES (@authorId, @title, @description, @body, @tagList, @slug) RETURNING id, created_at, updated_at, deleted_at;';
@@ -364,6 +364,117 @@ class ArticlesService {
     await connection.query(sql, substitutionValues: {'articleId': article.id});
   }
 
+  Future<Favorite> createFavorite(
+      {required String userId, required String articleId}) async {
+    final user = await usersService.getUserById(userId);
+
+    if (user == null) {
+      throw NotFoundException(message: 'User not found');
+    }
+
+    final article = await getArticleById(articleId);
+
+    if (article == null) {
+      throw NotFoundException(message: 'Article not found');
+    }
+
+    final existingFavorite = await getFavoriteUserIdAndArticleId(
+        userId: user.id, articleId: article.id);
+
+    if (existingFavorite != null) {
+      return existingFavorite;
+    }
+
+    final hasDeletedFavoriteSql =
+        'SELECT EXISTS (SELECT 1 FROM $favoritesTable WHERE user_id = @userId AND article_id = @articleId AND deleted_at IS NOT NULL);';
+
+    final hasDeletedFavoriteResult = await connection.query(
+        hasDeletedFavoriteSql,
+        substitutionValues: {'userId': user.id, 'articleId': article.id});
+
+    final hasDeletedFavorite = hasDeletedFavoriteResult[0][0];
+
+    String sql;
+    if (hasDeletedFavorite) {
+      sql =
+          'UPDATE $favoritesTable SET deleted_at = NULL, updated_at = current_timestamp WHERE user_id = @userId AND article_id = @articleId RETURNING id, created_at, updated_at, deleted_at;';
+    } else {
+      sql =
+          'INSERT INTO $favoritesTable(user_id, article_id) VALUES(@userId, @articleId) RETURNING id, created_at, updated_at, deleted_at;';
+    }
+
+    final result = await connection.query(sql,
+        substitutionValues: {'userId': user.id, 'articleId': article.id});
+
+    final favoriteRow = result[0];
+
+    final favoriteId = favoriteRow[0];
+    final createdAt = favoriteRow[1];
+    final updatedAt = favoriteRow[2];
+    final deletedAt = favoriteRow[3];
+
+    return Favorite(
+        id: favoriteId,
+        userId: user.id,
+        articleId: article.id,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        deletedAt: deletedAt);
+  }
+
+  Future<Favorite?> getFavoriteById(String favoriteId) async {
+    final sql =
+        'SELECT user_id, article_id, created_at, updated_at, deleted_at FROM $favoritesTable WHERE id = @favoriteId AND deleted_at IS NULL;';
+
+    final result = await connection
+        .query(sql, substitutionValues: {'favoriteId': favoriteId});
+
+    final favoriteRow = result[0];
+
+    final userId = favoriteRow[0];
+    final articleId = favoriteRow[1];
+    final createdAt = favoriteRow[2];
+    final updatedAt = favoriteRow[3];
+    final deletedAt = favoriteRow[4];
+
+    return Favorite(
+        id: favoriteId,
+        userId: userId,
+        articleId: articleId,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        deletedAt: deletedAt);
+  }
+
+  Future<Favorite?> getFavoriteUserIdAndArticleId(
+      {required String userId, required String articleId}) async {
+    final user = await usersService.getUserById(userId);
+
+    if (user == null) {
+      throw NotFoundException(message: 'User not found');
+    }
+
+    final article = await getArticleById(articleId);
+
+    if (article == null) {
+      throw NotFoundException(message: 'Article not found');
+    }
+
+    final sql =
+        'SELECT id FROM $favoritesTable WHERE user_id = @userId AND article_id = @articleId AND deleted_at IS NULL';
+
+    final result = await connection.query(sql,
+        substitutionValues: {'userId': user.id, 'articleId': article.id});
+
+    if (result.isEmpty) {
+      return null;
+    }
+
+    final favoriteId = result[0][0];
+
+    return await getFavoriteById(favoriteId);
+  }
+
   Future<List<Favorite>> listFavorites(String articleId) async {
     final sql =
         'SELECT id, user_id, created_at, updated_at, deleted_at FROM $favoritesTable WHERE article_id = @articleId AND deleted_at IS NULL;';
@@ -394,17 +505,43 @@ class ArticlesService {
     return favorites;
   }
 
-  Future<bool> isFavorited(
-      {required String userId, required String articleId}) async {
-    final favorites = await listFavorites(articleId);
+  Future<int> getFavoritesCount(String articleId) async {
+    final article = await getArticleById(articleId);
 
-    return favorites.any((f) => f.userId == userId);
+    if (article == null) {
+      throw NotFoundException(message: 'Article not found');
+    }
+
+    final sql =
+        'SELECT COUNT(*) FROM $favoritesTable WHERE article_id = @articleId AND deleted_at IS NULL;';
+
+    final result = await connection
+        .query(sql, substitutionValues: {'articleId': article.id});
+
+    return result[0][0];
   }
 
-  Future<int> getFavoritesCount(String articleId) async {
-    final favorites = await listFavorites(articleId);
+  Future<bool> isFavorited(
+      {required String userId, required String articleId}) async {
+    final user = await usersService.getUserById(userId);
 
-    return favorites.length;
+    if (user == null) {
+      throw NotFoundException(message: 'User not found');
+    }
+
+    final article = await getArticleById(articleId);
+
+    if (article == null) {
+      throw NotFoundException(message: 'Article not found');
+    }
+
+    final sql =
+        'SELECT EXISTS(SELECT 1 FROM $favoritesTable WHERE user_id = @userId AND article_id = @articleId AND deleted_at IS NULL);';
+
+    final result = await connection.query(sql,
+        substitutionValues: {'userId': user.id, 'articleId': article.id});
+
+    return result[0][0];
   }
 
   void _validateTitleOrThrow(String title) {

@@ -245,3 +245,24 @@ Future<Response> deleteArticleBySlug(String slug,
 
   return await delete(deleteArticleBySlugUri(slug), headers: headers);
 }
+
+Uri favoriteArticleUri(String slug) {
+  return Uri.parse(host + '/articles/$slug/favorite');
+}
+
+Future<Response> favoriteArticle(String slug, {required String token}) async {
+  final headers = makeAuthorizationHeader(token);
+
+  return await post(favoriteArticleUri(slug), headers: headers);
+}
+
+Future<ArticleDto> favoriteArticleAndDecode(String slug,
+    {required String token}) async {
+  final response = await favoriteArticle(slug, token: token);
+
+  expect(response.statusCode, 200);
+
+  final responseJson = json.decode(response.body);
+
+  return ArticleDto.fromJson(responseJson);
+}

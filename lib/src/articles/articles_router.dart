@@ -7,6 +7,7 @@ import 'package:dart_shelf_realworld_example_app/src/articles/model/article.dart
 import 'package:dart_shelf_realworld_example_app/src/common/errors/dtos/error_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/already_exists_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/argument_exception.dart';
+import 'package:dart_shelf_realworld_example_app/src/common/exceptions/not_found_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/misc/order_by.dart';
 import 'package:dart_shelf_realworld_example_app/src/profiles/dtos/profile_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/profiles/profiles_service.dart';
@@ -81,13 +82,7 @@ class ArticlesRouter {
       return Response(409, body: jsonEncode(ErrorDto(errors: [e.message])));
     }
 
-    final favoritesCount = await articlesService.getFavoritesCount(article.id);
-
-    final author = ProfileDto(
-        username: user.username,
-        bio: user.bio,
-        image: user.image,
-        following: false);
+    final authorProfile = await getProfileByUserId(user.id);
 
     final articleDto = ArticleDto(
         slug: article.slug,
@@ -97,9 +92,10 @@ class ArticlesRouter {
         tagList: article.tagList,
         createdAt: article.createdAt,
         updatedAt: article.updatedAt,
-        favorited: false,
-        favoritesCount: favoritesCount,
-        author: author);
+        favorited: await articlesService.isFavorited(
+            userId: user.id, articleId: article.id),
+        favoritesCount: await articlesService.getFavoritesCount(article.id),
+        author: authorProfile);
 
     return Response(201, body: jsonEncode(articleDto));
   }
@@ -108,7 +104,7 @@ class ArticlesRouter {
     final slug = request.params['slug'];
 
     if (slug == null) {
-      throw UnsupportedError('slug must be in the request params');
+      throw AssertionError('slug must be in the request params');
     }
 
     final article = await articlesService.getArticleBySlug(slug);
@@ -118,31 +114,19 @@ class ArticlesRouter {
           jsonEncode(ErrorDto(errors: ['Article not found'])));
     }
 
-    final author = await usersService.getUserById(article.authorId);
-
-    if (author == null) {
-      throw StateError('Author not found');
+    User? user;
+    if (request.context['user'] != null) {
+      user = request.context['user'] as User;
     }
 
-    var isArticleFavorited = false;
-    var isFollowingAuthor = false;
+    final authorProfile =
+        await getProfileByUserId(article.authorId, follower: user);
 
-    final contextUser = request.context['user'];
-    if (contextUser != null) {
-      final user = contextUser as User;
-      isArticleFavorited = await articlesService.isFavorited(
+    var favorited = false;
+    if (user != null) {
+      favorited = await articlesService.isFavorited(
           userId: user.id, articleId: article.id);
-      isFollowingAuthor = await profilesService.isFollowing(
-          followerId: user.id, followeeId: author.id);
     }
-
-    final favoritesCount = await articlesService.getFavoritesCount(article.id);
-
-    final authorProfile = ProfileDto(
-        username: author.username,
-        bio: author.bio,
-        image: author.image,
-        following: isFollowingAuthor);
 
     final articleDto = ArticleDto(
         slug: article.slug,
@@ -152,8 +136,8 @@ class ArticlesRouter {
         tagList: article.tagList,
         createdAt: article.createdAt,
         updatedAt: article.updatedAt,
-        favorited: isArticleFavorited,
-        favoritesCount: favoritesCount,
+        favorited: favorited,
+        favoritesCount: await articlesService.getFavoritesCount(article.id),
         author: authorProfile);
 
     return Response.ok(jsonEncode(articleDto));
@@ -226,33 +210,25 @@ class ArticlesRouter {
     final articlesDtos = <ArticleDto>[];
 
     for (final article in articles) {
-      final favoritesCount =
-          await articlesService.getFavoritesCount(article.id);
-
       final articleAuthor = await usersService.getUserById(article.authorId);
 
       if (articleAuthor == null) {
-        throw StateError('Article author not found');
+        throw AssertionError('Article author not found');
       }
 
-      var isArticleFavoritedByUser = false;
-      var isArticleAuthorFollowedByUser = false;
-
+      User? user;
       if (request.context['user'] != null) {
-        final user = request.context['user'] as User;
-
-        isArticleFavoritedByUser = await articlesService.isFavorited(
-            userId: user.id, articleId: article.id);
-
-        isArticleAuthorFollowedByUser = await profilesService.isFollowing(
-            followerId: user.id, followeeId: articleAuthor.id);
+        user = request.context['user'] as User;
       }
 
-      final articleAuthorProfile = ProfileDto(
-          username: articleAuthor.username,
-          bio: articleAuthor.bio,
-          image: articleAuthor.image,
-          following: isArticleAuthorFollowedByUser);
+      var favorited = false;
+      if (user != null) {
+        favorited = await articlesService.isFavorited(
+            userId: user.id, articleId: article.id);
+      }
+
+      final authorProfile =
+          await getProfileByUserId(article.authorId, follower: user);
 
       final articleDto = ArticleDto(
           slug: article.slug,
@@ -262,9 +238,9 @@ class ArticlesRouter {
           tagList: article.tagList,
           createdAt: article.createdAt,
           updatedAt: article.updatedAt,
-          favorited: isArticleFavoritedByUser,
-          favoritesCount: favoritesCount,
-          author: articleAuthorProfile);
+          favorited: favorited,
+          favoritesCount: await articlesService.getFavoritesCount(article.id),
+          author: authorProfile);
 
       articlesDtos.add(articleDto);
     }
@@ -280,7 +256,7 @@ class ArticlesRouter {
     final slug = request.params['slug'];
 
     if (slug == null) {
-      throw UnsupportedError('slug must be in the request params');
+      throw AssertionError('slug must be in the request params');
     }
 
     final requestBody = await request.readAsString();
@@ -321,13 +297,8 @@ class ArticlesRouter {
       return Response(422, body: jsonEncode(ErrorDto(errors: [e.message])));
     }
 
-    final favoritesCount = await articlesService.getFavoritesCount(article.id);
-
-    final author = ProfileDto(
-        username: user.username,
-        bio: user.bio,
-        image: user.image,
-        following: false);
+    final authorProfile =
+        await getProfileByUserId(article.authorId, follower: user);
 
     final articleDto = ArticleDto(
         slug: updatedArticle.slug,
@@ -337,9 +308,10 @@ class ArticlesRouter {
         tagList: updatedArticle.tagList,
         createdAt: updatedArticle.createdAt,
         updatedAt: updatedArticle.updatedAt,
-        favorited: false,
-        favoritesCount: favoritesCount,
-        author: author);
+        favorited: await articlesService.isFavorited(
+            userId: user.id, articleId: article.id),
+        favoritesCount: await articlesService.getFavoritesCount(article.id),
+        author: authorProfile);
 
     return Response.ok(jsonEncode(articleDto));
   }
@@ -350,7 +322,7 @@ class ArticlesRouter {
     final slug = request.params['slug'];
 
     if (slug == null) {
-      throw UnsupportedError('slug must be in the request params');
+      throw AssertionError('slug must be in the request params');
     }
 
     final article = await articlesService.getArticleBySlug(slug);
@@ -369,6 +341,69 @@ class ArticlesRouter {
     return Response(204);
   }
 
+  Future<Response> _favoriteArticle(Request request) async {
+    final user = request.context['user'] as User;
+
+    final slug = request.params['slug'];
+
+    if (slug == null) {
+      throw AssertionError('slug must be in the request params');
+    }
+
+    var article = await articlesService.getArticleBySlug(slug);
+
+    if (article == null) {
+      return Response.notFound(
+          jsonEncode(ErrorDto(errors: ['Article not found'])));
+    }
+
+    final author = await usersService.getUserById(article.authorId);
+
+    if (author == null) {
+      throw AssertionError('Author not found');
+    }
+
+    await articlesService.createFavorite(
+        userId: user.id, articleId: article.id);
+
+    final authorProfile = await getProfileByUserId(author.id, follower: user);
+
+    final articleDto = ArticleDto(
+        slug: article.slug,
+        title: article.title,
+        description: article.description,
+        body: article.body,
+        tagList: article.tagList,
+        createdAt: article.createdAt,
+        updatedAt: article.updatedAt,
+        favorited: await articlesService.isFavorited(
+            userId: user.id, articleId: article.id),
+        favoritesCount: await articlesService.getFavoritesCount(article.id),
+        author: authorProfile);
+
+    return Response.ok(json.encode(articleDto));
+  }
+
+  Future<ProfileDto> getProfileByUserId(String userId, {User? follower}) async {
+    final user = await usersService.getUserById(userId);
+
+    if (user == null) {
+      throw NotFoundException(message: 'User not found');
+    }
+
+    var following = false;
+    if (follower != null) {
+      following = await profilesService.isFollowing(
+          followerId: follower.id, followeeId: user.id);
+    }
+
+    return ProfileDto(
+        username: user.username,
+        bio: user.bio,
+        image: user.image,
+        following: following);
+  }
+
   Handler get router {
     final router = Router();
 
@@ -377,6 +412,12 @@ class ArticlesRouter {
         Pipeline()
             .addMiddleware(authProvider.requireAuth())
             .addHandler(_createArticle));
+
+    router.post(
+        '/articles/<slug>/favorite',
+        Pipeline()
+            .addMiddleware(authProvider.requireAuth())
+            .addHandler(_favoriteArticle));
 
     router.get(
         '/articles/<slug>',
