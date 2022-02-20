@@ -97,4 +97,22 @@ void main() {
           articles.articles.any((a) => a.slug == author2Article.slug), false);
     });
   });
+
+  group('Given favorited filter', () {
+    test('Should return 200', () async {
+      var author1Article = await createRandomArticleAndDecode(author1);
+
+      await favoriteArticle(author1Article.slug, token: author2.token);
+
+      final articles = await listArticlesAndDecode(
+          favoritedByUsername: author2.username, token: author2.token);
+
+      final fetchedArticle = await getArticleAndDecodeBySlug(
+          author1Article.slug,
+          token: author2.token);
+
+      expect(articles.articlesCount, 1);
+      expect(articles.articles[0].toJson(), fetchedArticle.toJson());
+    });
+  });
 }

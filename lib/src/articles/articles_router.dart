@@ -146,7 +146,7 @@ class ArticlesRouter {
   Future<Response> _listArticles(Request request) async {
     final tag = request.url.queryParameters['tag'];
     final authorUsername = request.url.queryParameters['author'];
-    final favoritedByUsername = request.url.queryParameters['favorite'];
+    final favoritedByUsername = request.url.queryParameters['favorited'];
     final limitParam = request.url.queryParameters['limit'];
     final offsetParam = request.url.queryParameters['offset'];
 
