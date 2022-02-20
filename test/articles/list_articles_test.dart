@@ -80,4 +80,21 @@ void main() {
       expect(articles.articlesCount, 2);
     });
   });
+
+  group('Given author filter', () {
+    test('Should return 200', () async {
+      var author1Article = await createRandomArticleAndDecode(author1);
+
+      var author2Article = await createRandomArticleAndDecode(author2);
+
+      final articles = await listArticlesAndDecode(author: author1.username);
+
+      final author1ArticleFromList =
+          articles.articles.firstWhere((a) => a.slug == author1Article.slug);
+
+      expect(author1ArticleFromList.toJson(), author1Article.toJson());
+      expect(
+          articles.articles.any((a) => a.slug == author2Article.slug), false);
+    });
+  });
 }
