@@ -169,7 +169,7 @@ class ArticlesRouter {
 
       if (favoritedByUser == null) {
         return Response.notFound(
-            jsonEncode(ErrorDto(errors: ['Favorited not found'])));
+            jsonEncode(ErrorDto(errors: ['User not found'])));
       }
 
       favoritedByUserId = favoritedByUser.id;
@@ -199,13 +199,19 @@ class ArticlesRouter {
 
     final orderBy = OrderBy(property: 'created_at', order: Order.desc);
 
-    final articles = await articlesService.listArticles(
-        tag: tag,
-        authorId: authorId,
-        favoritedByUserId: favoritedByUserId,
-        limit: limit,
-        offset: offset,
-        orderBy: orderBy);
+    List<Article> articles;
+
+    try {
+      articles = await articlesService.listArticles(
+          tag: tag,
+          authorId: authorId,
+          favoritedByUserId: favoritedByUserId,
+          limit: limit,
+          offset: offset,
+          orderBy: orderBy);
+    } on ArgumentException catch (e) {
+      return Response(422, body: jsonEncode(ErrorDto(errors: [e.message])));
+    }
 
     final articlesDtos = <ArticleDto>[];
 

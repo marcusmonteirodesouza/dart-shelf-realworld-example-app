@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:dart_shelf_realworld_example_app/src/common/errors/dtos/error_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/dtos/user_dto.dart';
 import 'package:test/test.dart';
 
@@ -79,6 +82,15 @@ void main() {
       expect(author2ArticleFromList.toJson(), author2Article.toJson());
       expect(articles.articlesCount, 2);
     });
+
+    test('Given no tags were found should return 200', () async {
+      final tag = faker.guid.guid();
+
+      final articles = await listArticlesAndDecode(tag: tag);
+
+      expect(articles.articles.isEmpty, true);
+      expect(articles.articlesCount, 0);
+    });
   });
 
   group('Given author filter', () {
@@ -95,6 +107,20 @@ void main() {
       expect(author1ArticleFromList.toJson(), author1Article.toJson());
       expect(
           articles.articles.any((a) => a.slug == author2Article.slug), false);
+    });
+
+    test('Given Author is not found should return 404', () async {
+      final author = faker.internet.userName();
+
+      final response = await listArticles(author: author);
+
+      expect(response.statusCode, 404);
+
+      final responseJson = jsonDecode(response.body);
+
+      final error = ErrorDto.fromJson(responseJson);
+
+      expect(error.errors[0], 'Author not found');
     });
   });
 
@@ -113,6 +139,57 @@ void main() {
 
       expect(articles.articlesCount, 1);
       expect(articles.articles[0].toJson(), fetchedArticle.toJson());
+    });
+
+    test('Given User is not found should return 404', () async {
+      final username = faker.internet.userName();
+
+      final response = await listArticles(favoritedByUsername: username);
+
+      expect(response.statusCode, 404);
+
+      final responseJson = jsonDecode(response.body);
+
+      final error = ErrorDto.fromJson(responseJson);
+
+      expect(error.errors[0], 'User not found');
+    });
+  });
+
+  group('Given limit', () {
+    test('Should return 200', () async {
+      final limit = faker.randomGenerator.integer(30, min: 1);
+
+      for (var i = 0; i <= limit; i++) {
+        await createRandomArticleAndDecode(author1);
+      }
+
+      final articles = await listArticlesAndDecode(limit: limit);
+
+      expect(articles.articlesCount, limit);
+    });
+
+    test('Given limit is zero should return 200', () async {
+      final limit = 0;
+
+      final articles = await listArticlesAndDecode(limit: limit);
+
+      expect(articles.articles.isEmpty, true);
+      expect(articles.articlesCount, 0);
+    });
+
+    test('Given limit is negative should return 422', () async {
+      final limit = -1;
+
+      final response = await listArticles(limit: limit);
+
+      expect(response.statusCode, 422);
+
+      final responseJson = jsonDecode(response.body);
+
+      final error = ErrorDto.fromJson(responseJson);
+
+      expect(error.errors[0], 'limit must be positive');
     });
   });
 }

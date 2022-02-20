@@ -70,7 +70,8 @@ Future<ArticleDto> createRandomArticleAndDecode(UserDto author,
     String? description,
     String? body,
     List<String>? tagList}) async {
-  title ??= faker.lorem.sentence();
+  title ??=
+      faker.lorem.sentences(faker.randomGenerator.integer(2, min: 1)).join(' ');
   description ??=
       faker.lorem.sentences(faker.randomGenerator.integer(3, min: 1)).join();
   body ??=
@@ -126,11 +127,11 @@ Uri listArticlesUri(
   }
 
   if (limit != null) {
-    queryParameters['limit'] = limit;
+    queryParameters['limit'] = limit.toString();
   }
 
   if (offset != null) {
-    queryParameters['offset'] = offset;
+    queryParameters['offset'] = offset.toString();
   }
 
   if (Uri.parse(host).isScheme('http')) {
