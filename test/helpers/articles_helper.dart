@@ -71,9 +71,9 @@ Future<ArticleDto> createRandomArticleAndDecode(UserDto author,
     String? body,
     List<String>? tagList}) async {
   title ??=
-      faker.lorem.sentences(faker.randomGenerator.integer(2, min: 1)).join(' ');
+      faker.lorem.sentences(faker.randomGenerator.integer(4, min: 1)).join(' ');
   description ??=
-      faker.lorem.sentences(faker.randomGenerator.integer(3, min: 1)).join();
+      faker.lorem.sentences(faker.randomGenerator.integer(8, min: 1)).join();
   body ??=
       faker.lorem.sentences(faker.randomGenerator.integer(20, min: 1)).join();
 

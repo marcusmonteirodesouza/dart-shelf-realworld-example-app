@@ -192,4 +192,44 @@ void main() {
       expect(error.errors[0], 'limit must be positive');
     });
   });
+
+  group('Given offset', () {
+    test('Should return 200', () async {
+      final offset = faker.randomGenerator.integer(20, min: 1);
+
+      final expectedFirstArticle = await createRandomArticleAndDecode(author2);
+
+      for (var i = 1; i <= offset; i++) {
+        await createRandomArticleAndDecode(author1);
+      }
+
+      final articles = await listArticlesAndDecode(offset: offset);
+
+      expect(articles.articles[0].toJson(), expectedFirstArticle.toJson());
+    });
+
+    test('Given offset is zero should return 200', () async {
+      final offset = 0;
+
+      final expectedFirstArticle = await createRandomArticleAndDecode(author2);
+
+      final articles = await listArticlesAndDecode(offset: offset);
+
+      expect(articles.articles[0].toJson(), expectedFirstArticle.toJson());
+    });
+
+    test('Given offset is negative should return 422', () async {
+      final offset = -1;
+
+      final response = await listArticles(offset: offset);
+
+      expect(response.statusCode, 422);
+
+      final responseJson = jsonDecode(response.body);
+
+      final error = ErrorDto.fromJson(responseJson);
+
+      expect(error.errors[0], 'offset must be positive');
+    });
+  });
 }
