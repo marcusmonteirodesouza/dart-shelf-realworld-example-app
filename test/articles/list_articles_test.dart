@@ -232,4 +232,35 @@ void main() {
       expect(error.errors[0], 'offset must be positive');
     });
   });
+
+  group('Given all filters', () {
+    test('Should return 200', () async {
+      final tag = faker.guid.guid();
+
+      final article1 =
+          await createRandomArticleAndDecode(author1, tagList: [tag]);
+
+      final article2 =
+          await createRandomArticleAndDecode(author1, tagList: [tag]);
+
+      final fetchedArticle1 =
+          await favoriteArticleAndDecode(article1.slug, token: author2.token);
+
+      await favoriteArticle(article2.slug, token: author2.token);
+
+      final limit = 1;
+
+      final offset = 1;
+
+      final articles = await listArticlesAndDecode(
+          token: author2.token,
+          author: author1.username,
+          favoritedByUsername: author2.username,
+          limit: limit,
+          offset: offset);
+
+      expect(articles.articlesCount, 1);
+      expect(articles.articles[0].toJson(), fetchedArticle1.toJson());
+    });
+  });
 }
