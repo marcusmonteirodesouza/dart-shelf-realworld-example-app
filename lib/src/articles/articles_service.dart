@@ -1,3 +1,4 @@
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/article_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/model/article.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/model/favorite.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/already_exists_exception.dart';
@@ -519,6 +520,48 @@ class ArticlesService {
         .query(sql, substitutionValues: {'articleId': article.id});
 
     return result[0][0];
+  }
+
+  Future<void> deleteFavoriteById(String favoriteId) async {
+    final favorite = await getFavoriteById(favoriteId);
+
+    if (favorite == null) {
+      throw NotFoundException(message: 'Favorite not found');
+    }
+
+    final sql =
+        'UPDATE $favoritesTable SET deleted_at = current_timestamp WHERE id = @favoriteId;';
+
+    await connection.query(sql, substitutionValues: {'favoriteId': favoriteId});
+  }
+
+  Future<void> deleteFavoriteByUserIdAndArticleId(
+      {required String userId, required String articleId}) async {
+    final user = await usersService.getUserById(userId);
+
+    if (user == null) {
+      throw NotFoundException(message: 'User not found');
+    }
+
+    final article = await getArticleById(articleId);
+
+    if (article == null) {
+      throw NotFoundException(message: 'Article not found');
+    }
+
+    final sql =
+        'SELECT id FROM $favoritesTable WHERE user_id = @userId AND article_id = @articleId AND deleted_at IS NULL;';
+
+    final result = await connection.query(sql,
+        substitutionValues: {'userId': user.id, 'articleId': article.id});
+
+    if (result.isEmpty) {
+      return;
+    }
+
+    final favoriteId = result[0][0];
+
+    await deleteFavoriteById(favoriteId);
   }
 
   Future<bool> isFavorited(

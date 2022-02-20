@@ -128,7 +128,7 @@ void main() {
     test('Should return 200', () async {
       var author1Article = await createRandomArticleAndDecode(author1);
 
-      await favoriteArticle(author1Article.slug, token: author2.token);
+      await favoriteArticleBySlug(author1Article.slug, token: author2.token);
 
       final articles = await listArticlesAndDecode(
           favoritedByUsername: author2.username, token: author2.token);
@@ -243,10 +243,11 @@ void main() {
       final article2 =
           await createRandomArticleAndDecode(author1, tagList: [tag]);
 
-      final fetchedArticle1 =
-          await favoriteArticleAndDecode(article1.slug, token: author2.token);
+      final fetchedArticle1 = await favoriteArticleAndDecodeBySlug(
+          article1.slug,
+          token: author2.token);
 
-      await favoriteArticle(article2.slug, token: author2.token);
+      await favoriteArticleBySlug(article2.slug, token: author2.token);
 
       final limit = 1;
 
