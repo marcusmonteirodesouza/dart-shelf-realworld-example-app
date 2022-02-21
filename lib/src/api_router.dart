@@ -1,4 +1,5 @@
 import 'package:dart_shelf_realworld_example_app/src/articles/articles_router.dart';
+import 'package:dart_shelf_realworld_example_app/src/common/middleware/json_content_type_response.dart';
 import 'package:dart_shelf_realworld_example_app/src/profiles/profiles_router.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/users_router.dart';
 import 'package:shelf/shelf.dart';
@@ -22,6 +23,8 @@ class ApiRouter {
     router.mount(prefix, profilesRouter.router);
     router.mount(prefix, articlesRouter.router);
 
-    return router;
+    return Pipeline()
+        .addMiddleware(jsonContentTypeResponse())
+        .addHandler(router);
   }
 }
