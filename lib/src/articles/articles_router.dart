@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dart_shelf_realworld_example_app/src/articles/articles_service.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/article_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/comment_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/list_of_tags_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_articles_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_comments_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/model/article.dart';
@@ -569,6 +570,14 @@ class ArticlesRouter {
     return Response(204);
   }
 
+  Future<Response> _getTags(Request request) async {
+    final tags = await articlesService.listTags();
+
+    final listOfTagsDto = ListOfTagsDto(tags: tags);
+
+    return Response.ok(jsonEncode(listOfTagsDto));
+  }
+
   Future<ProfileDto> _getProfileByUserId(String userId,
       {User? follower}) async {
     final user = await usersService.getUserById(userId);
@@ -628,6 +637,8 @@ class ArticlesRouter {
         Pipeline()
             .addMiddleware(authProvider.optionalAuth())
             .addHandler(_getCommentsFromArticle));
+
+    router.get('/tags', _getTags);
 
     router.put(
         '/articles/<slug>',

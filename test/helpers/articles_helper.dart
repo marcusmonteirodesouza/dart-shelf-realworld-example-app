@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/article_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/comment_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/list_of_tags_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_articles_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_comments_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/dtos/user_dto.dart';
@@ -381,4 +382,22 @@ Future<Response> deleteCommentById(
 
   return await delete(deleteCommentByIdUri(slug: slug, commentId: commentId),
       headers: headers);
+}
+
+Uri getTagsUri() {
+  return Uri.parse(host + '/tags');
+}
+
+Future<Response> getTags() async {
+  return await get(getTagsUri());
+}
+
+Future<ListOfTagsDto> getTagsAndDecode() async {
+  final response = await getTags();
+
+  expect(response.statusCode, 200);
+
+  final responseJson = jsonDecode(response.body);
+
+  return ListOfTagsDto.fromJson(responseJson);
 }

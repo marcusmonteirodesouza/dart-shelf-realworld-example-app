@@ -366,6 +366,15 @@ class ArticlesService {
     await connection.query(sql, substitutionValues: {'articleId': article.id});
   }
 
+  Future<List<String>> listTags() async {
+    final sql =
+        'SELECT array_agg(t) FROM (SELECT DISTINCT(unnest(tag_list)) as tags FROM articles a WHERE deleted_at IS null ORDER BY tags) as dt(t);';
+
+    final result = await connection.query(sql);
+
+    return result[0][0];
+  }
+
   Future<Favorite> createFavorite(
       {required String userId, required String articleId}) async {
     final user = await usersService.getUserById(userId);
