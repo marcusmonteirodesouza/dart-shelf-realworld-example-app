@@ -62,7 +62,7 @@ void main() {
 
   group('Given tag filter', () {
     test('Should return 200', () async {
-      final tag = faker.lorem.word();
+      final tag = faker.guid.guid();
 
       var author1Article =
           await createRandomArticleAndDecode(author1, tagList: [tag]);
