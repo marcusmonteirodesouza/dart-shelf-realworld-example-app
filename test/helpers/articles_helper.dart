@@ -368,3 +368,17 @@ Future<MultipleCommentsDto> getCommentsFromArticleAndDecode(String slug,
 
   return MultipleCommentsDto.fromJson(responseJson);
 }
+
+Uri deleteCommentByIdUri({required String slug, required String commentId}) {
+  return Uri.parse(host + '/articles/$slug/comments/$commentId');
+}
+
+Future<Response> deleteCommentById(
+    {required String slug,
+    required String commentId,
+    required String token}) async {
+  final headers = makeHeadersWithAuthorization(token);
+
+  return await delete(deleteCommentByIdUri(slug: slug, commentId: commentId),
+      headers: headers);
+}

@@ -322,22 +322,28 @@ void main() {
   });
 
   group('authorization', () {
+    late Uri uri;
+
+    setUp(() {
+      uri = updateUserUri();
+    });
+
     test('Given no authorization header should return 401', () async {
-      final response = await get(updateUserUri());
+      final response = await get(uri);
 
       expect(response.statusCode, 401);
     });
 
     test('Given invalid authorization header should return 401', () async {
       final headers = {'Authorization': 'invalid'};
-      final response = await get(updateUserUri(), headers: headers);
+      final response = await get(uri, headers: headers);
 
       expect(response.statusCode, 401);
     });
 
     test('Given no token should return 401', () async {
       final headers = {'Authorization': 'Token '};
-      final response = await get(updateUserUri(), headers: headers);
+      final response = await get(uri, headers: headers);
 
       expect(response.statusCode, 401);
     });
@@ -348,7 +354,7 @@ void main() {
 
       final headers = {'Authorization': 'Token $token'};
 
-      final response = await get(updateUserUri(), headers: headers);
+      final response = await get(uri, headers: headers);
 
       expect(response.statusCode, 401);
     });

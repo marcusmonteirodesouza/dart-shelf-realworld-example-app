@@ -632,6 +632,36 @@ class ArticlesService {
         deletedAt: deletedAt);
   }
 
+  Future<Comment?> getCommentById(String commentId) async {
+    var sql =
+        'SELECT author_id, article_id, body, created_at, updated_at, deleted_at FROM $commentsTable WHERE id = @commentId AND deleted_at IS NULL';
+
+    final result = await connection
+        .query(sql, substitutionValues: {'commentId': commentId});
+
+    if (result.isEmpty) {
+      return null;
+    }
+
+    final commentRow = result[0];
+
+    final authorId = commentRow[0];
+    final articleId = commentRow[1];
+    final body = commentRow[2];
+    final createdAt = commentRow[3];
+    final updatedAt = commentRow[4];
+    final deletedAt = commentRow[5];
+
+    return Comment(
+        id: commentId,
+        authorId: authorId,
+        articleId: articleId,
+        body: body,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        deletedAt: deletedAt);
+  }
+
   Future<List<Comment>> listComments({String? articleId}) async {
     var sql =
         'SELECT id, author_id, article_id, body, created_at, updated_at, deleted_at FROM $commentsTable WHERE deleted_at IS NULL';
@@ -676,6 +706,19 @@ class ArticlesService {
     }
 
     return comments;
+  }
+
+  Future<void> deleteCommentById(String commentId) async {
+    final comment = await getCommentById(commentId);
+
+    if (comment == null) {
+      throw NotFoundException(message: 'Comment not found');
+    }
+
+    final sql =
+        'UPDATE $commentsTable SET deleted_at = current_timestamp WHERE id = @commentId;';
+
+    await connection.query(sql, substitutionValues: {'commentId': commentId});
   }
 
   void _validateTitleOrThrow(String title) {

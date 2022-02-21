@@ -114,24 +114,28 @@ void main() {
   });
 
   group('authorization', () {
+    late Uri uri;
+
+    setUp(() {
+      uri = followUserByUsernameUri(followee.username);
+    });
+
     test('Given no authorization header should return 401', () async {
-      final response = await post(followUserByUsernameUri(followee.username));
+      final response = await post(uri);
 
       expect(response.statusCode, 401);
     });
 
     test('Given invalid authorization header should return 401', () async {
       final headers = {'Authorization': 'invalid'};
-      final response = await post(followUserByUsernameUri(followee.username),
-          headers: headers);
+      final response = await post(uri, headers: headers);
 
       expect(response.statusCode, 401);
     });
 
     test('Given no token should return 401', () async {
       final headers = {'Authorization': 'Token '};
-      final response = await post(followUserByUsernameUri(followee.username),
-          headers: headers);
+      final response = await post(uri, headers: headers);
 
       expect(response.statusCode, 401);
     });
@@ -142,8 +146,7 @@ void main() {
 
       final headers = {'Authorization': 'Token $token'};
 
-      final response = await post(followUserByUsernameUri(followee.username),
-          headers: headers);
+      final response = await post(uri, headers: headers);
 
       expect(response.statusCode, 401);
     });
