@@ -55,7 +55,7 @@ void main() {
         'article': {'title': title}
       };
 
-      final headers = makeAuthorizationHeader(author.token);
+      final headers = makeHeadersWithAuthorization(author.token);
 
       final response =
           await put(uri, headers: headers, body: jsonEncode(requestData));
@@ -80,7 +80,7 @@ void main() {
         'article': {'title': title}
       };
 
-      final headers = makeAuthorizationHeader(author.token);
+      final headers = makeHeadersWithAuthorization(author.token);
 
       final response =
           await put(uri, headers: headers, body: jsonEncode(requestData));
@@ -133,7 +133,7 @@ void main() {
         'article': {'description': description}
       };
 
-      final headers = makeAuthorizationHeader(author.token);
+      final headers = makeHeadersWithAuthorization(author.token);
 
       final response =
           await put(uri, headers: headers, body: jsonEncode(requestData));
@@ -158,7 +158,7 @@ void main() {
         'article': {'description': description}
       };
 
-      final headers = makeAuthorizationHeader(author.token);
+      final headers = makeHeadersWithAuthorization(author.token);
 
       final response =
           await put(uri, headers: headers, body: jsonEncode(requestData));
@@ -211,7 +211,7 @@ void main() {
         'article': {'body': body}
       };
 
-      final headers = makeAuthorizationHeader(author.token);
+      final headers = makeHeadersWithAuthorization(author.token);
 
       final response =
           await put(uri, headers: headers, body: jsonEncode(requestData));
@@ -236,7 +236,7 @@ void main() {
         'article': {'body': body}
       };
 
-      final headers = makeAuthorizationHeader(author.token);
+      final headers = makeHeadersWithAuthorization(author.token);
 
       final response =
           await put(uri, headers: headers, body: jsonEncode(requestData));

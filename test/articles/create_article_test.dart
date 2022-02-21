@@ -60,8 +60,11 @@ void main() {
     final body =
         faker.lorem.sentences(faker.randomGenerator.integer(5, min: 1)).join();
 
-    final response = await createArticle(author,
-        title: existingArticle.title, description: description, body: body);
+    final response = await createArticle(
+        token: author.token,
+        title: existingArticle.title,
+        description: description,
+        body: body);
 
     expect(response.statusCode, 409);
 
@@ -73,7 +76,7 @@ void main() {
   });
 
   test('Given no article should return 422', () async {
-    final headers = makeAuthorizationHeader(author.token);
+    final headers = makeHeadersWithAuthorization(author.token);
 
     final requestData = {};
 
@@ -98,7 +101,7 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final headers = makeAuthorizationHeader(author.token);
+      final headers = makeHeadersWithAuthorization(author.token);
 
       final requestData = {
         'article': {
@@ -128,8 +131,11 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final response = await createArticle(author,
-          title: title, description: description, body: body);
+      final response = await createArticle(
+          token: author.token,
+          title: title,
+          description: description,
+          body: body);
 
       expect(response.statusCode, 422);
 
@@ -149,8 +155,11 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final response = await createArticle(author,
-          title: title, description: description, body: body);
+      final response = await createArticle(
+          token: author.token,
+          title: title,
+          description: description,
+          body: body);
 
       expect(response.statusCode, 422);
 
@@ -169,7 +178,7 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final headers = makeAuthorizationHeader(author.token);
+      final headers = makeHeadersWithAuthorization(author.token);
 
       final requestData = {
         'article': {
@@ -197,8 +206,11 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final response = await createArticle(author,
-          title: title, description: description, body: body);
+      final response = await createArticle(
+          token: author.token,
+          title: title,
+          description: description,
+          body: body);
 
       expect(response.statusCode, 422);
 
@@ -216,8 +228,11 @@ void main() {
           .sentences(faker.randomGenerator.integer(20, min: 1))
           .join();
 
-      final response = await createArticle(author,
-          title: title, description: description, body: body);
+      final response = await createArticle(
+          token: author.token,
+          title: title,
+          description: description,
+          body: body);
 
       expect(response.statusCode, 422);
 
@@ -236,7 +251,7 @@ void main() {
           .sentences(faker.randomGenerator.integer(5, min: 1))
           .join();
 
-      final headers = makeAuthorizationHeader(author.token);
+      final headers = makeHeadersWithAuthorization(author.token);
 
       final requestData = {
         'article': {
@@ -264,8 +279,11 @@ void main() {
           .join();
       final body = '';
 
-      final response = await createArticle(author,
-          title: title, description: description, body: body);
+      final response = await createArticle(
+          token: author.token,
+          title: title,
+          description: description,
+          body: body);
 
       expect(response.statusCode, 422);
 
@@ -283,8 +301,11 @@ void main() {
           .join();
       final body = ' ';
 
-      final response = await createArticle(author,
-          title: title, description: description, body: body);
+      final response = await createArticle(
+          token: author.token,
+          title: title,
+          description: description,
+          body: body);
 
       expect(response.statusCode, 422);
 

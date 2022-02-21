@@ -19,6 +19,7 @@ services:
     image: "postgres:14.2-alpine"
     volumes:
       - ./initdb:/docker-entrypoint-initdb.d
+      - ./postgres-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_PORT=${DB_PORT}
       - POSTGRES_USER=${DB_USER}

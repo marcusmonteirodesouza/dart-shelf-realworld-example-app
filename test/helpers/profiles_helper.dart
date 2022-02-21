@@ -15,7 +15,7 @@ Future<Response> getProfileByUsername(String username, {String? token}) async {
   Map<String, String> headers = {};
 
   if (token != null) {
-    headers = makeAuthorizationHeader(token);
+    headers = makeHeadersWithAuthorization(token);
   }
 
   return await get(getProfileUriByUsername(username), headers: headers);
@@ -40,7 +40,7 @@ Uri followUserByUsernameUri(String username) {
 
 Future<Response> followUserByUsername(String username,
     {required String token}) async {
-  var headers = makeAuthorizationHeader(token);
+  var headers = makeHeadersWithAuthorization(token);
 
   return await post(followUserByUsernameUri(username), headers: headers);
 }
@@ -62,7 +62,7 @@ Uri unfollowUserUri(String username) {
 
 Future<Response> unfollowUserByUsername(String username,
     {required String token}) async {
-  var headers = makeAuthorizationHeader(token);
+  var headers = makeHeadersWithAuthorization(token);
 
   return await delete(unfollowUserUri(username), headers: headers);
 }

@@ -7,3 +7,6 @@ build/
 .gitignore
 .idea/
 .packages
+postgres-data
+.env*
+dev.sh
