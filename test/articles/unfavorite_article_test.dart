@@ -73,29 +73,29 @@ void main() {
 
   group('authorization', () {
     late ArticleDto article;
+    late Uri uri;
 
     setUp(() async {
       article = await createRandomArticleAndDecode(author);
+      uri = unFavoriteArticleUri(article.slug);
     });
 
     test('Given no authorization header should return 401', () async {
-      final response = await delete(unFavoriteArticleUri(article.slug));
+      final response = await delete(uri);
 
       expect(response.statusCode, 401);
     });
 
     test('Given invalid authorization header should return 401', () async {
       final headers = {'Authorization': 'invalid'};
-      final response =
-          await delete(unFavoriteArticleUri(article.slug), headers: headers);
+      final response = await delete(uri, headers: headers);
 
       expect(response.statusCode, 401);
     });
 
     test('Given no token should return 401', () async {
       final headers = {'Authorization': 'Token '};
-      final response =
-          await delete(unFavoriteArticleUri(article.slug), headers: headers);
+      final response = await delete(uri, headers: headers);
 
       expect(response.statusCode, 401);
     });
@@ -106,8 +106,7 @@ void main() {
 
       final headers = {'Authorization': 'Token $token'};
 
-      final response =
-          await delete(unFavoriteArticleUri(article.slug), headers: headers);
+      final response = await delete(uri, headers: headers);
 
       expect(response.statusCode, 401);
     });

@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/article_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/comment_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/errors/dtos/error_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/dtos/user_dto.dart';
 import 'package:http/http.dart';
-import 'package:slugify/slugify.dart';
 import 'package:test/test.dart';
 
 import '../helpers/articles_helper.dart';
@@ -13,35 +13,37 @@ import '../helpers/users_helper.dart';
 import '../test_fixtures.dart';
 
 void main() {
-  late UserDto author;
+  late ArticleDto article;
+  late UserDto commentAuthor;
 
   setUp(() async {
-    author = (await registerRandomUserAndUpdateBioAndImage()).user;
+    final articleAuthor = (await registerRandomUserAndUpdateBioAndImage()).user;
+    article = await createRandomArticleAndDecode(articleAuthor);
+    commentAuthor = (await registerRandomUser()).user;
   });
 
   test('Should return 204', () async {
-    final article = await createRandomArticleAndDecode(author);
+    final comment =
+        await createdRandomComment(article.slug, token: commentAuthor.token);
 
-    final deleteArticleResponse =
-        await deleteArticleBySlug(article.slug, token: author.token);
+    final deleteCommentResponse = await deleteCommentById(
+        slug: article.slug, commentId: comment.id, token: commentAuthor.token);
 
-    expect(deleteArticleResponse.statusCode, 204);
+    expect(deleteCommentResponse.statusCode, 204);
 
-    final getArticleResponse = await getArticleBySlug(article.slug);
+    final articleComments = await getCommentsFromArticleAndDecode(article.slug);
 
-    expect(getArticleResponse.statusCode, 404);
-
-    final responseJson = jsonDecode(getArticleResponse.body);
-
-    final error = ErrorDto.fromJson(responseJson);
-
-    expect(error.errors[0], 'Article not found');
+    expect(articleComments.comments.length, 0);
   });
 
   test('Given Article does not exist should return 404', () async {
-    final slug = slugify(faker.lorem.sentence());
+    final slug = faker.guid.guid();
 
-    final response = await deleteArticleBySlug(slug, token: author.token);
+    final comment =
+        await createdRandomComment(article.slug, token: commentAuthor.token);
+
+    final response = await deleteCommentById(
+        slug: slug, commentId: comment.id, token: commentAuthor.token);
 
     expect(response.statusCode, 404);
 
@@ -52,13 +54,29 @@ void main() {
     expect(error.errors[0], 'Article not found');
   });
 
+  test('Given Comment does not exist should return 404', () async {
+    final commentId = faker.guid.guid();
+
+    final response = await deleteCommentById(
+        slug: article.slug, commentId: commentId, token: commentAuthor.token);
+
+    expect(response.statusCode, 404);
+
+    final responseJson = jsonDecode(response.body);
+
+    final error = ErrorDto.fromJson(responseJson);
+
+    expect(error.errors[0], 'Comment not found');
+  });
+
   group('authorization', () {
-    late ArticleDto article;
+    late CommentDto comment;
     late Uri uri;
 
     setUp(() async {
-      article = await createRandomArticleAndDecode(author);
-      uri = deleteArticleBySlugUri(article.slug);
+      comment =
+          await createdRandomComment(article.slug, token: commentAuthor.token);
+      uri = deleteCommentByIdUri(slug: article.slug, commentId: comment.id);
     });
 
     test('Given no authorization header should return 401', () async {
@@ -95,7 +113,9 @@ void main() {
     test('Given wrong token should return 403', () async {
       final anotherUser = await registerRandomUser();
 
-      final response = await deleteArticleBySlug(article.slug,
+      final response = await deleteCommentById(
+          slug: article.slug,
+          commentId: comment.id,
           token: anotherUser.user.token);
 
       expect(response.statusCode, 403);

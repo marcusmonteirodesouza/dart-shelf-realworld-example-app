@@ -42,6 +42,22 @@ void main() {
     expect(commentsFromArticle.comments[1].toJson(), articleComment2.toJson());
   });
 
+  test('Should not return deleted comments', () async {
+    final commentAuthor = await registerRandomUser();
+
+    final comment = await createdRandomComment(article.slug,
+        token: commentAuthor.user.token);
+
+    await deleteCommentById(
+        slug: article.slug,
+        commentId: comment.id,
+        token: commentAuthor.user.token);
+
+    final comments = await getCommentsFromArticleAndDecode(article.slug);
+
+    expect(comments.comments.any((c) => c.id == comment.id), false);
+  });
+
   group('Given caller is not authenticated', () {
     test('Should return 200', () async {
       final commentAuthor1 = await registerRandomUser();

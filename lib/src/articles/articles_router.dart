@@ -532,6 +532,43 @@ class ArticlesRouter {
     return Response.ok(jsonEncode(MultipleCommentsDto(comments: commentDtos)));
   }
 
+  Future<Response> _deleteComment(Request request) async {
+    final user = request.context['user'] as User;
+
+    final slug = request.params['slug'];
+    final commentId = request.params['commentId'];
+
+    if (slug == null) {
+      throw AssertionError('slug must be in the request params');
+    }
+
+    if (commentId == null) {
+      throw AssertionError('commentId must be in the request params');
+    }
+
+    final article = await articlesService.getArticleBySlug(slug);
+
+    if (article == null) {
+      return Response.notFound(
+          jsonEncode(ErrorDto(errors: ['Article not found'])));
+    }
+
+    final comment = await articlesService.getCommentById(commentId);
+
+    if (comment == null) {
+      return Response.notFound(
+          jsonEncode(ErrorDto(errors: ['Comment not found'])));
+    }
+
+    if (comment.authorId != user.id) {
+      return Response(403);
+    }
+
+    await articlesService.deleteCommentById(commentId);
+
+    return Response(204);
+  }
+
   Future<ProfileDto> _getProfileByUserId(String userId,
       {User? follower}) async {
     final user = await usersService.getUserById(userId);
@@ -609,6 +646,12 @@ class ArticlesRouter {
         Pipeline()
             .addMiddleware(authProvider.requireAuth())
             .addHandler(_unFavoriteArticle));
+
+    router.delete(
+        '/articles/<slug>/comments/<commentId>',
+        Pipeline()
+            .addMiddleware(authProvider.requireAuth())
+            .addHandler(_deleteComment));
 
     return router;
   }
