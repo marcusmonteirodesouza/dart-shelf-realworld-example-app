@@ -3,6 +3,7 @@ import 'package:dart_shelf_realworld_example_app/src/common/middleware/json_cont
 import 'package:dart_shelf_realworld_example_app/src/profiles/profiles_router.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/users_router.dart';
 import 'package:shelf/shelf.dart';
+import 'package:shelf_cors_headers/shelf_cors_headers.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 class ApiRouter {
@@ -24,6 +25,7 @@ class ApiRouter {
     router.mount(prefix, articlesRouter.router);
 
     return Pipeline()
+        .addMiddleware(corsHeaders())
         .addMiddleware(jsonContentTypeResponse())
         .addHandler(router);
   }

@@ -302,6 +302,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.0"
+  shelf_cors_headers:
+    dependency: "direct main"
+    description:
+      name: shelf_cors_headers
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.2"
   shelf_packages_handler:
     dependency: transitive
     description:
