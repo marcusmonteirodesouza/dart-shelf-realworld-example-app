@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:dart_shelf_realworld_example_app/src/articles/articles_service.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/article_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/comment_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_articles_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_comments_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/model/article.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/errors/dtos/error_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/already_exists_exception.dart';
@@ -17,6 +19,7 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '../common/middleware/auth.dart';
 import '../users/model/user.dart';
+import 'model/comment.dart';
 
 class ArticlesRouter {
   final ArticlesService articlesService;
@@ -101,6 +104,11 @@ class ArticlesRouter {
   }
 
   Future<Response> _getArticle(Request request) async {
+    User? user;
+    if (request.context['user'] != null) {
+      user = request.context['user'] as User;
+    }
+
     final slug = request.params['slug'];
 
     if (slug == null) {
@@ -112,11 +120,6 @@ class ArticlesRouter {
     if (article == null) {
       return Response.notFound(
           jsonEncode(ErrorDto(errors: ['Article not found'])));
-    }
-
-    User? user;
-    if (request.context['user'] != null) {
-      user = request.context['user'] as User;
     }
 
     final authorProfile =
@@ -146,6 +149,11 @@ class ArticlesRouter {
   }
 
   Future<Response> _listArticles(Request request) async {
+    User? user;
+    if (request.context['user'] != null) {
+      user = request.context['user'] as User;
+    }
+
     final tag = request.url.queryParameters['tag'];
     final authorUsername = request.url.queryParameters['author'];
     final favoritedByUsername = request.url.queryParameters['favorited'];
@@ -222,11 +230,6 @@ class ArticlesRouter {
 
       if (articleAuthor == null) {
         throw AssertionError('Article author not found');
-      }
-
-      User? user;
-      if (request.context['user'] != null) {
-        user = request.context['user'] as User;
       }
 
       var favorited = false;
@@ -430,6 +433,105 @@ class ArticlesRouter {
     return Response.ok(jsonEncode(articleDto));
   }
 
+  Future<Response> _addCommentToArticle(Request request) async {
+    final user = request.context['user'] as User;
+
+    final slug = request.params['slug'];
+
+    if (slug == null) {
+      throw AssertionError('slug must be in the request params');
+    }
+
+    final requestBody = await request.readAsString();
+
+    final requestData = json.decode(requestBody);
+
+    final commentData = requestData['comment'];
+
+    if (commentData == null) {
+      return Response(422,
+          body: jsonEncode(ErrorDto(errors: ['comment is required'])));
+    }
+
+    final body = commentData['body'];
+
+    if (body == null) {
+      return Response(422,
+          body: jsonEncode(ErrorDto(errors: ['body is required'])));
+    }
+
+    final article = await articlesService.getArticleBySlug(slug);
+
+    if (article == null) {
+      return Response.notFound(
+          jsonEncode(ErrorDto(errors: ['Article not found'])));
+    }
+
+    Comment comment;
+    try {
+      comment = await articlesService.createComment(
+          authorId: user.id, articleId: article.id, body: body);
+    } on ArgumentException catch (e) {
+      return Response(422, body: jsonEncode(ErrorDto(errors: [e.message])));
+    }
+
+    final userProfile = await _getProfileByUserId(user.id);
+
+    final commentDto = CommentDto(
+        id: comment.id,
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+        body: comment.body,
+        author: userProfile);
+
+    return Response(201, body: jsonEncode(commentDto));
+  }
+
+  Future<Response> _getCommentsFromArticle(Request request) async {
+    User? user;
+    if (request.context['user'] != null) {
+      user = request.context['user'] as User;
+    }
+
+    final slug = request.params['slug'];
+
+    if (slug == null) {
+      throw AssertionError('slug must be in the request params');
+    }
+
+    final article = await articlesService.getArticleBySlug(slug);
+
+    if (article == null) {
+      return Response.notFound(
+          jsonEncode(ErrorDto(errors: ['Article not found'])));
+    }
+
+    List<Comment> comments;
+    try {
+      comments = await articlesService.listComments(articleId: article.id);
+    } on ArgumentException catch (e) {
+      return Response(422, body: jsonEncode(ErrorDto(errors: [e.message])));
+    }
+
+    List<CommentDto> commentDtos = <CommentDto>[];
+
+    for (final comment in comments) {
+      final authorProfile =
+          await _getProfileByUserId(comment.authorId, follower: user);
+
+      final commentDto = CommentDto(
+          id: comment.id,
+          createdAt: comment.createdAt,
+          updatedAt: comment.updatedAt,
+          body: comment.body,
+          author: authorProfile);
+
+      commentDtos.add(commentDto);
+    }
+
+    return Response.ok(jsonEncode(MultipleCommentsDto(comments: commentDtos)));
+  }
+
   Future<ProfileDto> _getProfileByUserId(String userId,
       {User? follower}) async {
     final user = await usersService.getUserById(userId);
@@ -466,6 +568,12 @@ class ArticlesRouter {
             .addMiddleware(authProvider.requireAuth())
             .addHandler(_favoriteArticle));
 
+    router.post(
+        '/articles/<slug>/comments',
+        Pipeline()
+            .addMiddleware(authProvider.requireAuth())
+            .addHandler(_addCommentToArticle));
+
     router.get(
         '/articles/<slug>',
         Pipeline()
@@ -477,6 +585,12 @@ class ArticlesRouter {
         Pipeline()
             .addMiddleware(authProvider.optionalAuth())
             .addHandler(_listArticles));
+
+    router.get(
+        '/articles/<slug>/comments',
+        Pipeline()
+            .addMiddleware(authProvider.optionalAuth())
+            .addHandler(_getCommentsFromArticle));
 
     router.put(
         '/articles/<slug>',

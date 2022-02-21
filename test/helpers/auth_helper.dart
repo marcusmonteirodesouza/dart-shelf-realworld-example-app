@@ -2,7 +2,7 @@ import 'package:dart_shelf_realworld_example_app/src/users/jwt_service.dart';
 
 import '../test_fixtures.dart';
 
-Map<String, String> makeAuthorizationHeader(String token) {
+Map<String, String> makeHeadersWithAuthorization(String token) {
   return {'Authorization': 'Token $token'};
 }
 

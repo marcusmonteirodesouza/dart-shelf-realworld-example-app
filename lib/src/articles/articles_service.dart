@@ -8,10 +8,12 @@ import 'package:postgres/postgres.dart';
 import 'package:slugify/slugify.dart';
 
 import '../users/users_service.dart';
+import 'model/comment.dart';
 
 class ArticlesService {
   static String articlesTable = 'articles';
   static String favoritesTable = 'favorites';
+  static String commentsTable = 'comments';
 
   final PostgreSQLConnection connection;
   final UsersService usersService;
@@ -584,6 +586,96 @@ class ArticlesService {
         substitutionValues: {'userId': user.id, 'articleId': article.id});
 
     return result[0][0];
+  }
+
+  Future<Comment> createComment(
+      {required String authorId,
+      required String articleId,
+      required String body}) async {
+    final author = await usersService.getUserById(authorId);
+
+    if (author == null) {
+      throw NotFoundException(message: 'Author not found');
+    }
+
+    final article = await getArticleById(articleId);
+
+    if (article == null) {
+      throw NotFoundException(message: 'Article not found');
+    }
+
+    _validateBodyOrThrow(body);
+
+    final sql =
+        'INSERT INTO $commentsTable(author_id, article_id, body) VALUES (@authorId, @articleId, @body) RETURNING id, created_at, updated_at, deleted_at';
+
+    final result = await connection.query(sql, substitutionValues: {
+      'authorId': author.id,
+      'articleId': article.id,
+      'body': body
+    });
+
+    final commentRow = result[0];
+
+    final commentId = commentRow[0];
+    final createdAt = commentRow[1];
+    final updatedAt = commentRow[2];
+    final deletedAt = commentRow[3];
+
+    return Comment(
+        id: commentId,
+        authorId: author.id,
+        articleId: article.id,
+        body: body,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        deletedAt: deletedAt);
+  }
+
+  Future<List<Comment>> listComments({String? articleId}) async {
+    var sql =
+        'SELECT id, author_id, article_id, body, created_at, updated_at, deleted_at FROM $commentsTable WHERE deleted_at IS NULL';
+
+    if (articleId != null) {
+      final article = await getArticleById(articleId);
+
+      if (article == null) {
+        throw NotFoundException(message: 'Article not found');
+      }
+
+      sql = sql + ' AND article_id = @articleId';
+    }
+
+    // Default ordering
+    sql = sql + ' ORDER BY created_at';
+
+    final result = await connection
+        .query(sql, substitutionValues: {'articleId': articleId});
+
+    final comments = <Comment>[];
+
+    for (final row in result) {
+      final commentId = row[0];
+      final authorId = row[1];
+      final articleId = row[2];
+      final body = row[3];
+      final createdAt = row[4];
+      final updatedAt = row[5];
+      final deletedAt = row[6];
+
+      final comment = Comment(
+          id: commentId,
+          authorId: authorId,
+          articleId: articleId,
+          body: body,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          deletedAt: deletedAt);
+
+      comments.add(comment);
+    }
+
+    return comments;
   }
 
   void _validateTitleOrThrow(String title) {

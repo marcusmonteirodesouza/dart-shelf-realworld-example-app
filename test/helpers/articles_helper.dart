@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/article_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/comment_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_articles_dto.dart';
+import 'package:dart_shelf_realworld_example_app/src/articles/dtos/multiple_comments_dto.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/dtos/user_dto.dart';
 import 'package:http/http.dart';
 import 'package:slugify/slugify.dart';
@@ -15,12 +17,13 @@ Uri createArticleUri() {
   return Uri.parse(host + '/articles');
 }
 
-Future<Response> createArticle(UserDto author,
-    {required String title,
+Future<Response> createArticle(
+    {required String token,
+    required String title,
     required String description,
     required String body,
     List<String>? tagList}) async {
-  final headers = makeAuthorizationHeader(author.token);
+  final headers = makeHeadersWithAuthorization(token);
 
   final requestData = {
     'article': {
@@ -40,8 +43,12 @@ Future<ArticleDto> createArticleAndDecode(UserDto author,
     required String description,
     required String body,
     List<String>? tagList}) async {
-  final response = await createArticle(author,
-      title: title, description: description, body: body, tagList: tagList);
+  final response = await createArticle(
+      token: author.token,
+      title: title,
+      description: description,
+      body: body,
+      tagList: tagList);
 
   expect(response.statusCode, 201);
 
@@ -89,7 +96,7 @@ Future<Response> getArticleBySlug(String slug, {String? token}) async {
   Map<String, String> headers = {};
 
   if (token != null) {
-    headers = makeAuthorizationHeader(token);
+    headers = makeHeadersWithAuthorization(token);
   }
 
   return await get(getArticleBySlugUri(slug), headers: headers);
@@ -153,7 +160,7 @@ Future<Response> listArticles(
   Map<String, String> headers = {};
 
   if (token != null) {
-    headers = makeAuthorizationHeader(token);
+    headers = makeHeadersWithAuthorization(token);
   }
 
   return await get(
@@ -215,7 +222,7 @@ Future<Response> updateArticleBySlug(String slug,
     requestData['article']?['title'] = title;
   }
 
-  final headers = makeAuthorizationHeader(token);
+  final headers = makeHeadersWithAuthorization(token);
 
   return await put(updateArticleBySlugUri(slug),
       headers: headers, body: jsonEncode(requestData));
@@ -242,7 +249,7 @@ Uri deleteArticleBySlugUri(String slug) {
 
 Future<Response> deleteArticleBySlug(String slug,
     {required String token}) async {
-  final headers = makeAuthorizationHeader(token);
+  final headers = makeHeadersWithAuthorization(token);
 
   return await delete(deleteArticleBySlugUri(slug), headers: headers);
 }
@@ -253,7 +260,7 @@ Uri favoriteArticleUri(String slug) {
 
 Future<Response> favoriteArticleBySlug(String slug,
     {required String token}) async {
-  final headers = makeAuthorizationHeader(token);
+  final headers = makeHeadersWithAuthorization(token);
 
   return await post(favoriteArticleUri(slug), headers: headers);
 }
@@ -275,7 +282,7 @@ Uri unFavoriteArticleUri(String slug) {
 
 Future<Response> unFavoriteArticleBySlug(String slug,
     {required String token}) async {
-  final headers = makeAuthorizationHeader(token);
+  final headers = makeHeadersWithAuthorization(token);
 
   return await delete(unFavoriteArticleUri(slug), headers: headers);
 }
@@ -289,4 +296,74 @@ Future<ArticleDto> unFavoriteArticleAndDecodeBySlug(String slug,
   final responseJson = json.decode(response.body);
 
   return ArticleDto.fromJson(responseJson);
+}
+
+Uri createCommentUri(String slug) {
+  return Uri.parse(host + '/articles/$slug/comments');
+}
+
+Future<Response> createComment(String slug,
+    {required String token, required String body}) async {
+  final headers = makeHeadersWithAuthorization(token);
+
+  final requestData = {
+    'comment': {
+      'body': body,
+    }
+  };
+
+  return await post(createCommentUri(slug),
+      headers: headers, body: jsonEncode(requestData));
+}
+
+Future<CommentDto> createCommentAndDecode(String slug,
+    {required String token, required String body}) async {
+  final response = await createComment(slug, token: token, body: body);
+
+  expect(response.statusCode, 201);
+
+  final responseJson = json.decode(response.body);
+
+  final comment = CommentDto.fromJson(responseJson);
+
+  final now = DateTime.now();
+
+  expect(comment.createdAt.difference(now).inSeconds < 1, true);
+  expect(comment.updatedAt.isAtSameMomentAs(comment.createdAt), true);
+  expect(comment.body, body);
+
+  return comment;
+}
+
+Future<CommentDto> createdRandomComment(String slug,
+    {required String token}) async {
+  final body =
+      faker.lorem.sentences(faker.randomGenerator.integer(6, min: 1)).join(' ');
+
+  return await createCommentAndDecode(slug, token: token, body: body);
+}
+
+Uri getCommentsFromArticleUri(String slug) {
+  return Uri.parse(host + '/articles/$slug/comments');
+}
+
+Future<Response> getCommentsFromArticle(String slug, {String? token}) {
+  Map<String, String> headers = {};
+
+  if (token != null) {
+    headers = makeHeadersWithAuthorization(token);
+  }
+
+  return get(getCommentsFromArticleUri(slug), headers: headers);
+}
+
+Future<MultipleCommentsDto> getCommentsFromArticleAndDecode(String slug,
+    {String? token}) async {
+  final response = await getCommentsFromArticle(slug, token: token);
+
+  expect(response.statusCode, 200);
+
+  final responseJson = jsonDecode(response.body);
+
+  return MultipleCommentsDto.fromJson(responseJson);
 }

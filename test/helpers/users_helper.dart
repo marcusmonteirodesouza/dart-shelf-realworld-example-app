@@ -70,7 +70,7 @@ Future<UserAndPassword> registerRandomUserAndUpdateBioAndImage() async {
     'user': {'bio': bio, 'image': image}
   };
 
-  final headers = makeAuthorizationHeader(userAndPassword.user.token);
+  final headers = makeHeadersWithAuthorization(userAndPassword.user.token);
 
   final response =
       await put(uri, headers: headers, body: jsonEncode(requestData));
@@ -115,8 +115,8 @@ Future<UserDto> loginUserAndDecode(
 }
 
 Future<UserDto> getCurrentUser(String token) async {
-  final response =
-      await get(getCurrentUserUri(), headers: makeAuthorizationHeader(token));
+  final response = await get(getCurrentUserUri(),
+      headers: makeHeadersWithAuthorization(token));
 
   expect(response.statusCode, 200);
 
@@ -160,7 +160,8 @@ Future<Response> updateUser(String token,
   }
 
   return await put(updateUserUri(),
-      headers: makeAuthorizationHeader(token), body: jsonEncode(requestData));
+      headers: makeHeadersWithAuthorization(token),
+      body: jsonEncode(requestData));
 }
 
 Future<UserDto> updateUserAndDecode(String token,
