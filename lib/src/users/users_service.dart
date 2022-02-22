@@ -212,7 +212,7 @@ class UsersService {
     return updatedUser;
   }
 
-  Future<void> _validateUsernameOrThrow(String username) async {
+  Future _validateUsernameOrThrow(String username) async {
     if (username.trim().isEmpty) {
       throw ArgumentException(
           message: 'username cannot be blank', parameterName: 'username');
@@ -223,7 +223,7 @@ class UsersService {
     }
   }
 
-  Future<void> _validateEmailOrThrow(String email) async {
+  Future _validateEmailOrThrow(String email) async {
     if (!EmailValidator.validate(email)) {
       throw ArgumentException(
           message: 'Invalid email: $email', parameterName: 'email');

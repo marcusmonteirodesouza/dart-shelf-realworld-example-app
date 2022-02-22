@@ -353,7 +353,7 @@ class ArticlesService {
     return updatedArticle;
   }
 
-  Future<void> deleteArticleBySlug(String slug) async {
+  Future deleteArticleBySlug(String slug) async {
     final article = await getArticleBySlug(slug);
 
     if (article == null) {
@@ -532,7 +532,7 @@ class ArticlesService {
     return result[0][0];
   }
 
-  Future<void> deleteFavoriteById(String favoriteId) async {
+  Future deleteFavoriteById(String favoriteId) async {
     final favorite = await getFavoriteById(favoriteId);
 
     if (favorite == null) {
@@ -545,7 +545,7 @@ class ArticlesService {
     await connection.query(sql, substitutionValues: {'favoriteId': favoriteId});
   }
 
-  Future<void> deleteFavoriteByUserIdAndArticleId(
+  Future deleteFavoriteByUserIdAndArticleId(
       {required String userId, required String articleId}) async {
     final user = await usersService.getUserById(userId);
 
@@ -717,7 +717,7 @@ class ArticlesService {
     return comments;
   }
 
-  Future<void> deleteCommentById(String commentId) async {
+  Future deleteCommentById(String commentId) async {
     final comment = await getCommentById(commentId);
 
     if (comment == null) {
@@ -751,7 +751,7 @@ class ArticlesService {
     }
   }
 
-  Future<void> _validateSlugOrThrow(String slug) async {
+  Future _validateSlugOrThrow(String slug) async {
     final existingArticle = await getArticleBySlug(slug);
 
     if (existingArticle != null) {

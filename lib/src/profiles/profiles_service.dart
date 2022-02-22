@@ -140,7 +140,7 @@ class ProfilesService {
     return await getFollowById(followId);
   }
 
-  Future<void> deleteFollowByFollowerAndFollowee(
+  Future deleteFollowByFollowerAndFollowee(
       {required String followerId, required String followeeId}) async {
     if (!(await isFollowing(followerId: followerId, followeeId: followeeId))) {
       throw ArgumentException(message: 'Follow was not found');
