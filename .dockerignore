@@ -10,3 +10,4 @@ build/
 postgres-data
 .env*
 dev.sh
+deploy

@@ -15,15 +15,22 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 
 Future<HttpServer> createServer() async {
-  load();
+  var environment = Platform.environment['ENVIRONMENT'] ?? 'local';
+
+  environment = environment.trim().toLowerCase();
+
+  if (environment == 'local') {
+    load();
+  }
 
   final authSecretKey = env['AUTH_SECRET_KEY'];
   final authIssuer = env['AUTH_ISSUER'];
-  final dbHost = env['DB_HOST'];
+  var dbHost = env['DB_HOST'];
   final envDbPort = env['DB_PORT'];
   final dbName = env['DB_NAME'];
   final dbUser = env['DB_USER'];
   final dbPassword = env['DB_PASSWORD'];
+  final isUnixSocket = env['USE_UNIX_SOCKET'] != null ? true : false;
 
   if (authSecretKey == null) {
     throw StateError('Environment variable AUTH_SECRET_KEY is required');
@@ -34,7 +41,7 @@ Future<HttpServer> createServer() async {
   }
 
   if (dbHost == null) {
-    throw ArgumentError('Environment variable DB_HOST must be an integer');
+    throw ArgumentError('Environment variable DB_HOST is required');
   }
 
   if (envDbPort == null) {
@@ -51,10 +58,21 @@ Future<HttpServer> createServer() async {
     throw ArgumentError('Environment variable DB_PORT must be an integer');
   }
 
+  if (isUnixSocket) {
+    dbHost = dbHost + '/.s.PGSQL.$dbPort';
+  }
+
   final connection = PostgreSQLConnection(dbHost, dbPort, dbName,
-      username: dbUser, password: dbPassword);
+      username: dbUser, password: dbPassword, isUnixSocket: isUnixSocket);
+
+  print('Connecting to the database...');
 
   await connection.open();
+
+  // Validation query
+  final validationQueryResult = await connection.query('SELECT version();');
+
+  print('Connected to the database. ${validationQueryResult[0][0]}');
 
   final usersService = UsersService(connection: connection);
   final jwtService = JwtService(issuer: authIssuer, secretKey: authSecretKey);
@@ -96,6 +114,8 @@ Future<HttpServer> createServer() async {
 
   // For running in containers, we respect the PORT environment variable.
   final server = await serve(handler, ip, port);
+
   print('Server listening on port ${server.port}');
+
   return server;
 }
