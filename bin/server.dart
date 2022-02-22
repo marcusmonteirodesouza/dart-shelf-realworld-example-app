@@ -11,7 +11,7 @@ import 'package:dart_shelf_realworld_example_app/src/users/jwt_service.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/users_router.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/users_service.dart';
 import 'package:dotenv/dotenv.dart';
-import 'package:postgres/postgres.dart';
+import 'package:postgres_pool/postgres_pool.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 
@@ -63,24 +63,27 @@ Future main(List<String> args) async {
     dbHost = dbHost + '/.s.PGSQL.$dbPort';
   }
 
-  final connection = PostgreSQLConnection(dbHost, dbPort, dbName,
-      username: dbUser, password: dbPassword, isUnixSocket: isUnixSocket);
+  final connectionPool = PgPool(PgEndpoint(
+      host: dbHost,
+      port: dbPort,
+      database: dbName,
+      username: dbUser,
+      password: dbPassword,
+      isUnixSocket: isUnixSocket));
 
   print('Connecting to the database...');
 
-  await connection.open();
-
   // Validation query
-  final validationQueryResult = await connection.query('SELECT version();');
+  final validationQueryResult = await connectionPool.query('SELECT version();');
 
   print('Connected to the database. ${validationQueryResult[0][0]}');
 
-  final usersService = UsersService(connection: connection);
+  final usersService = UsersService(connectionPool: connectionPool);
   final jwtService = JwtService(issuer: authIssuer, secretKey: authSecretKey);
-  final profilesService =
-      ProfilesService(connection: connection, usersService: usersService);
-  final articlesService =
-      ArticlesService(connection: connection, usersService: usersService);
+  final profilesService = ProfilesService(
+      connectionPool: connectionPool, usersService: usersService);
+  final articlesService = ArticlesService(
+      connectionPool: connectionPool, usersService: usersService);
 
   final authProvider =
       AuthProvider(usersService: usersService, jwtService: jwtService);
@@ -117,7 +120,7 @@ Future main(List<String> args) async {
 
   await terminateRequestFuture();
 
-  await connection.close();
+  await connectionPool.close();
 
   await server.close();
 }

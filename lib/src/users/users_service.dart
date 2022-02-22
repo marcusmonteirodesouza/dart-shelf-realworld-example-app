@@ -3,14 +3,14 @@ import 'package:dart_shelf_realworld_example_app/src/common/exceptions/argument_
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/not_found_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/users/model/user.dart';
 import 'package:email_validator/email_validator.dart';
-import 'package:postgres/postgres.dart';
+import 'package:postgres_pool/postgres_pool.dart';
 
 class UsersService {
   static String usersTable = 'users';
 
-  final PostgreSQLConnection connection;
+  final PgPool connectionPool;
 
-  UsersService({required this.connection});
+  UsersService({required this.connectionPool});
 
   Future<User> createUser(
       {required String username,
@@ -25,7 +25,7 @@ class UsersService {
     final sql =
         "INSERT INTO $usersTable(username, email, password_hash) VALUES (@username, @email, crypt(@password, gen_salt('bf'))) RETURNING id, created_at, updated_at;";
 
-    final result = await connection.query(sql, substitutionValues: {
+    final result = await connectionPool.query(sql, substitutionValues: {
       'username': username,
       'email': email,
       'password': password
@@ -49,7 +49,7 @@ class UsersService {
         'SELECT email, username, bio, image, created_at, updated_at FROM $usersTable WHERE id = @id;';
 
     final result =
-        await connection.query(sql, substitutionValues: {'id': userId});
+        await connectionPool.query(sql, substitutionValues: {'id': userId});
 
     if (result.isEmpty) {
       return null;
@@ -78,7 +78,7 @@ class UsersService {
     final sql = 'SELECT id FROM $usersTable WHERE email = @email;';
 
     final result =
-        await connection.query(sql, substitutionValues: {'email': email});
+        await connectionPool.query(sql, substitutionValues: {'email': email});
 
     if (result.isEmpty) {
       return null;
@@ -93,7 +93,7 @@ class UsersService {
     final sql =
         'SELECT id FROM $usersTable WHERE email = @email AND password_hash = crypt(@password, password_hash);';
 
-    final result = await connection
+    final result = await connectionPool
         .query(sql, substitutionValues: {'email': email, 'password': password});
 
     if (result.isEmpty) {
@@ -108,8 +108,8 @@ class UsersService {
   Future<User?> getUserByUsername(String username) async {
     final sql = 'SELECT id FROM $usersTable WHERE username = @username;';
 
-    final result =
-        await connection.query(sql, substitutionValues: {'username': username});
+    final result = await connectionPool
+        .query(sql, substitutionValues: {'username': username});
 
     if (result.isEmpty) {
       return null;
@@ -190,7 +190,7 @@ class UsersService {
       sql = sql + ', updated_at = current_timestamp';
       sql = sql + ' WHERE email = @email RETURNING email;';
 
-      final result = await connection.query(sql, substitutionValues: {
+      final result = await connectionPool.query(sql, substitutionValues: {
         'email': email,
         'username': username,
         'emailForUpdate': emailForUpdate,

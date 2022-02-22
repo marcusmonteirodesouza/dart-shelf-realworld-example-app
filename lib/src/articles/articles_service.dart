@@ -4,7 +4,7 @@ import 'package:dart_shelf_realworld_example_app/src/common/exceptions/already_e
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/argument_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/not_found_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/misc/order_by.dart';
-import 'package:postgres/postgres.dart';
+import 'package:postgres_pool/postgres_pool.dart';
 import 'package:slugify/slugify.dart';
 
 import '../users/users_service.dart';
@@ -15,10 +15,10 @@ class ArticlesService {
   static String favoritesTable = 'favorites';
   static String commentsTable = 'comments';
 
-  final PostgreSQLConnection connection;
+  final PgPool connectionPool;
   final UsersService usersService;
 
-  ArticlesService({required this.connection, required this.usersService});
+  ArticlesService({required this.connectionPool, required this.usersService});
 
   Future<Article> createArticle(
       {required String authorId,
@@ -47,7 +47,7 @@ class ArticlesService {
         'SELECT EXISTS(SELECT 1 FROM $articlesTable WHERE slug = @slug AND deleted_at IS NOT NULL);';
 
     final hasDeletedArticleResult =
-        await connection.query(hasDeletedArticleSql, substitutionValues: {
+        await connectionPool.query(hasDeletedArticleSql, substitutionValues: {
       'slug': slug,
     });
 
@@ -62,7 +62,7 @@ class ArticlesService {
           'INSERT INTO $articlesTable(author_id, title, description, body, tag_list, slug) VALUES (@authorId, @title, @description, @body, @tagList, @slug) RETURNING id, created_at, updated_at, deleted_at;';
     }
 
-    final result = await connection.query(sql, substitutionValues: {
+    final result = await connectionPool.query(sql, substitutionValues: {
       'authorId': author.id,
       'title': title,
       'description': description,
@@ -95,7 +95,7 @@ class ArticlesService {
     final sql =
         'SELECT author_id, title, description, body, tag_list, slug, created_at, updated_at, deleted_at FROM $articlesTable WHERE id = @articleId AND deleted_at IS NULL;';
 
-    final result = await connection
+    final result = await connectionPool
         .query(sql, substitutionValues: {'articleId': articleId});
 
     if (result.isEmpty) {
@@ -132,7 +132,7 @@ class ArticlesService {
         'SELECT id FROM $articlesTable WHERE slug = @slug AND deleted_at IS NULL;';
 
     final result =
-        await connection.query(sql, substitutionValues: {'slug': slug});
+        await connectionPool.query(sql, substitutionValues: {'slug': slug});
 
     if (result.isEmpty) {
       return null;
@@ -226,7 +226,7 @@ class ArticlesService {
 
     sql = sql + ';';
 
-    final result = await connection.query(sql, substitutionValues: {
+    final result = await connectionPool.query(sql, substitutionValues: {
       'tag': tag,
       'authorId': authorId,
       'favoritedByUserId': favoritedByUserId,
@@ -333,7 +333,7 @@ class ArticlesService {
       sql = sql + ', updated_at = current_timestamp';
       sql = sql + ' WHERE id = @articleId;';
 
-      await connection.query(sql, substitutionValues: {
+      await connectionPool.query(sql, substitutionValues: {
         'articleId': article.id,
         'title': title,
         'slug': slug,
@@ -363,14 +363,15 @@ class ArticlesService {
     final sql =
         'UPDATE $articlesTable SET deleted_at = current_timestamp WHERE id = @articleId;';
 
-    await connection.query(sql, substitutionValues: {'articleId': article.id});
+    await connectionPool
+        .query(sql, substitutionValues: {'articleId': article.id});
   }
 
   Future<List<String>> listTags() async {
     final sql =
         'SELECT array_agg(t) FROM (SELECT DISTINCT(unnest(tag_list)) as tags FROM articles a WHERE deleted_at IS null ORDER BY tags) as dt(t);';
 
-    final result = await connection.query(sql);
+    final result = await connectionPool.query(sql);
 
     return result[0][0];
   }
@@ -399,7 +400,7 @@ class ArticlesService {
     final hasDeletedFavoriteSql =
         'SELECT EXISTS (SELECT 1 FROM $favoritesTable WHERE user_id = @userId AND article_id = @articleId AND deleted_at IS NOT NULL);';
 
-    final hasDeletedFavoriteResult = await connection.query(
+    final hasDeletedFavoriteResult = await connectionPool.query(
         hasDeletedFavoriteSql,
         substitutionValues: {'userId': user.id, 'articleId': article.id});
 
@@ -414,7 +415,7 @@ class ArticlesService {
           'INSERT INTO $favoritesTable(user_id, article_id) VALUES(@userId, @articleId) RETURNING id, created_at, updated_at, deleted_at;';
     }
 
-    final result = await connection.query(sql,
+    final result = await connectionPool.query(sql,
         substitutionValues: {'userId': user.id, 'articleId': article.id});
 
     final favoriteRow = result[0];
@@ -437,7 +438,7 @@ class ArticlesService {
     final sql =
         'SELECT user_id, article_id, created_at, updated_at, deleted_at FROM $favoritesTable WHERE id = @favoriteId AND deleted_at IS NULL;';
 
-    final result = await connection
+    final result = await connectionPool
         .query(sql, substitutionValues: {'favoriteId': favoriteId});
 
     final favoriteRow = result[0];
@@ -474,7 +475,7 @@ class ArticlesService {
     final sql =
         'SELECT id FROM $favoritesTable WHERE user_id = @userId AND article_id = @articleId AND deleted_at IS NULL';
 
-    final result = await connection.query(sql,
+    final result = await connectionPool.query(sql,
         substitutionValues: {'userId': user.id, 'articleId': article.id});
 
     if (result.isEmpty) {
@@ -490,7 +491,7 @@ class ArticlesService {
     final sql =
         'SELECT id, user_id, created_at, updated_at, deleted_at FROM $favoritesTable WHERE article_id = @articleId AND deleted_at IS NULL;';
 
-    final result = await connection
+    final result = await connectionPool
         .query(sql, substitutionValues: {'articleId': articleId});
 
     final favorites = <Favorite>[];
@@ -526,7 +527,7 @@ class ArticlesService {
     final sql =
         'SELECT COUNT(*) FROM $favoritesTable WHERE article_id = @articleId AND deleted_at IS NULL;';
 
-    final result = await connection
+    final result = await connectionPool
         .query(sql, substitutionValues: {'articleId': article.id});
 
     return result[0][0];
@@ -542,7 +543,8 @@ class ArticlesService {
     final sql =
         'UPDATE $favoritesTable SET deleted_at = current_timestamp WHERE id = @favoriteId;';
 
-    await connection.query(sql, substitutionValues: {'favoriteId': favoriteId});
+    await connectionPool
+        .query(sql, substitutionValues: {'favoriteId': favoriteId});
   }
 
   Future deleteFavoriteByUserIdAndArticleId(
@@ -562,7 +564,7 @@ class ArticlesService {
     final sql =
         'SELECT id FROM $favoritesTable WHERE user_id = @userId AND article_id = @articleId AND deleted_at IS NULL;';
 
-    final result = await connection.query(sql,
+    final result = await connectionPool.query(sql,
         substitutionValues: {'userId': user.id, 'articleId': article.id});
 
     if (result.isEmpty) {
@@ -591,7 +593,7 @@ class ArticlesService {
     final sql =
         'SELECT EXISTS(SELECT 1 FROM $favoritesTable WHERE user_id = @userId AND article_id = @articleId AND deleted_at IS NULL);';
 
-    final result = await connection.query(sql,
+    final result = await connectionPool.query(sql,
         substitutionValues: {'userId': user.id, 'articleId': article.id});
 
     return result[0][0];
@@ -618,7 +620,7 @@ class ArticlesService {
     final sql =
         'INSERT INTO $commentsTable(author_id, article_id, body) VALUES (@authorId, @articleId, @body) RETURNING id, created_at, updated_at, deleted_at';
 
-    final result = await connection.query(sql, substitutionValues: {
+    final result = await connectionPool.query(sql, substitutionValues: {
       'authorId': author.id,
       'articleId': article.id,
       'body': body
@@ -645,7 +647,7 @@ class ArticlesService {
     var sql =
         'SELECT author_id, article_id, body, created_at, updated_at, deleted_at FROM $commentsTable WHERE id = @commentId AND deleted_at IS NULL';
 
-    final result = await connection
+    final result = await connectionPool
         .query(sql, substitutionValues: {'commentId': commentId});
 
     if (result.isEmpty) {
@@ -688,7 +690,7 @@ class ArticlesService {
     // Default ordering
     sql = sql + ' ORDER BY created_at';
 
-    final result = await connection
+    final result = await connectionPool
         .query(sql, substitutionValues: {'articleId': articleId});
 
     final comments = <Comment>[];
@@ -727,7 +729,8 @@ class ArticlesService {
     final sql =
         'UPDATE $commentsTable SET deleted_at = current_timestamp WHERE id = @commentId;';
 
-    await connection.query(sql, substitutionValues: {'commentId': commentId});
+    await connectionPool
+        .query(sql, substitutionValues: {'commentId': commentId});
   }
 
   void _validateTitleOrThrow(String title) {
