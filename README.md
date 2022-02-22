@@ -46,3 +46,25 @@ $ ./dev.sh
 ```
 $ ./test.sh
 ```
+
+## Deployment
+
+### Deploy to [Google Cloud Platform](https://cloud.google.com/) (GCP)
+
+1. [Install terraform](https://www.terraform.io/).
+1. [Create a project](https://cloud.google.com/resource-manager/docs/creating-managing-projects) on GCP to host the application.
+1. [Enable Billing for the project](https://cloud.google.com/billing/docs/how-to/modify-project#enable_billing_for_a_project).
+1. [Install the gcloud CLI](https://cloud.google.com/sdk/docs/install).
+1. [Login with gcloud](https://cloud.google.com/sdk/gcloud/reference/auth/login).
+1. [Build and push the Docker image to Artifact Registry](https://cloud.google.com/container-registry/docs/pushing-and-pulling#pushing_an_image_to_a_registry)
+
+```bash
+$ gcloud builds submit --tag gcr.io/$(gcloud config get-value project)/conduit .
+```
+7. Copy the [./deploy/gcp/terraform/project.auto.tfvars.template] file into a `./deploy/gcp/terraform/project.auto.tfvars` file ([See](https://www.terraform.io/language/values/variables#variable-definitions-tfvars-files)) and update the variables' values.
+8. Move into [./deploy/gcp/terraform] directory and apply terraform
+
+```bash
+$ cd ./deploy/gcp/terraform
+$ terraform apply
+```

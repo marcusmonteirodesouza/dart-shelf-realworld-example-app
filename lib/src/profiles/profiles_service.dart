@@ -1,17 +1,17 @@
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/argument_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/common/exceptions/not_found_exception.dart';
 import 'package:dart_shelf_realworld_example_app/src/profiles/model/follow.dart';
-import 'package:postgres/postgres.dart';
+import 'package:postgres_pool/postgres_pool.dart';
 
 import '../users/users_service.dart';
 
 class ProfilesService {
   static String followsTable = 'follows';
 
-  final PostgreSQLConnection connection;
+  final PgPool connectionPool;
   final UsersService usersService;
 
-  ProfilesService({required this.connection, required this.usersService});
+  ProfilesService({required this.connectionPool, required this.usersService});
 
   Future<Follow> createFollow(
       {required String followerId, required String followeeId}) async {
@@ -42,7 +42,7 @@ class ProfilesService {
         'SELECT EXISTS(SELECT 1 FROM $followsTable WHERE follower_id = @followerId AND followee_id = @followeeId AND deleted_at IS NOT NULL);';
 
     final hasDeletedFollowResult =
-        await connection.query(hasDeletedFollowSql, substitutionValues: {
+        await connectionPool.query(hasDeletedFollowSql, substitutionValues: {
       'followerId': follower.id,
       'followeeId': followee.id,
     });
@@ -58,7 +58,7 @@ class ProfilesService {
           'INSERT INTO $followsTable(follower_id, followee_id) VALUES (@followerId, @followeeId) RETURNING id, created_at, updated_at, deleted_at;';
     }
 
-    final result = await connection.query(sql, substitutionValues: {
+    final result = await connectionPool.query(sql, substitutionValues: {
       'followerId': follower.id,
       'followeeId': followee.id,
     });
@@ -83,8 +83,8 @@ class ProfilesService {
     final sql =
         'SELECT follower_id, followee_id, created_at, updated_at, deleted_at FROM $followsTable WHERE id = @followId AND deleted_at IS NULL;';
 
-    final result =
-        await connection.query(sql, substitutionValues: {'followId': followId});
+    final result = await connectionPool
+        .query(sql, substitutionValues: {'followId': followId});
 
     if (result.isEmpty) {
       return null;
@@ -126,7 +126,7 @@ class ProfilesService {
     final sql =
         'SELECT id FROM $followsTable WHERE follower_id = @followerId AND followee_id = @followeeId AND deleted_at IS NULL;';
 
-    final result = await connection.query(sql, substitutionValues: {
+    final result = await connectionPool.query(sql, substitutionValues: {
       'followerId': follower.id,
       'followeeId': followee.id
     });
@@ -140,7 +140,7 @@ class ProfilesService {
     return await getFollowById(followId);
   }
 
-  Future<void> deleteFollowByFollowerAndFollowee(
+  Future deleteFollowByFollowerAndFollowee(
       {required String followerId, required String followeeId}) async {
     if (!(await isFollowing(followerId: followerId, followeeId: followeeId))) {
       throw ArgumentException(message: 'Follow was not found');
@@ -149,7 +149,7 @@ class ProfilesService {
     final sql =
         "UPDATE $followsTable SET deleted_at = current_timestamp WHERE follower_id = @followerId AND followee_id = @followeeId;";
 
-    await connection.query(sql, substitutionValues: {
+    await connectionPool.query(sql, substitutionValues: {
       'followerId': followerId,
       'followeeId': followeeId,
     });

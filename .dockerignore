@@ -10,3 +10,5 @@ build/
 postgres-data
 .env*
 dev.sh
+test.sh
+deploy
