@@ -373,7 +373,11 @@ class ArticlesService {
 
     final result = await connectionPool.query(sql);
 
-    return result[0][0];
+    if (result.isEmpty) {
+      return [];
+    }
+
+    return result[0][0] ?? [];
   }
 
   Future<Favorite> createFavorite(
