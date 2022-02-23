@@ -59,7 +59,7 @@ $ ./test.sh
 1. [Build and push the Docker image to Container Registry](https://cloud.google.com/container-registry/docs/pushing-and-pulling#pushing_an_image_to_a_registry)
 
 ```bash
-$ gcloud builds submit --tag gcr.io/$(gcloud config get-value project)/conduit .
+$ gcloud builds submit --tag gcr.io/$(gcloud config get-value project)/conduit-server .
 ```
 7. Copy the [project.auto.tfvars.template](./deploy/gcp/terraform/project.auto.tfvars.template) file into a `./deploy/gcp/terraform/project.auto.tfvars` file ([See](https://www.terraform.io/language/values/variables#variable-definitions-tfvars-files)) and update the variables' values.
 8. Move into [terraform directory](./deploy/gcp/terraform) and apply terraform
