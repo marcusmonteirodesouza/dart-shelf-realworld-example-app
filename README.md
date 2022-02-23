@@ -62,7 +62,7 @@ $ ./test.sh
 $ gcloud builds submit --tag gcr.io/$(gcloud config get-value project)/conduit .
 ```
 7. Copy the [project.auto.tfvars.template](./deploy/gcp/terraform/project.auto.tfvars.template) file into a `./deploy/gcp/terraform/project.auto.tfvars` file ([See](https://www.terraform.io/language/values/variables#variable-definitions-tfvars-files)) and update the variables' values.
-8. Move into [./deploy/gcp/terraform] directory and apply terraform
+8. Move into [terraform directory](./deploy/gcp/terraform) and apply terraform
 
 ```bash
 $ cd ./deploy/gcp/terraform
