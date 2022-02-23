@@ -56,7 +56,7 @@ $ ./test.sh
 1. [Enable Billing for the project](https://cloud.google.com/billing/docs/how-to/modify-project#enable_billing_for_a_project).
 1. [Install the gcloud CLI](https://cloud.google.com/sdk/docs/install).
 1. [Login with gcloud](https://cloud.google.com/sdk/gcloud/reference/auth/login).
-1. [Build and push the Docker image to Artifact Registry](https://cloud.google.com/container-registry/docs/pushing-and-pulling#pushing_an_image_to_a_registry)
+1. [Build and push the Docker image to Container Registry](https://cloud.google.com/container-registry/docs/pushing-and-pulling#pushing_an_image_to_a_registry)
 
 ```bash
 $ gcloud builds submit --tag gcr.io/$(gcloud config get-value project)/conduit .
