@@ -52,19 +52,8 @@ $ ./test.sh
 ### Deploy to [Google Cloud Platform](https://cloud.google.com/) (GCP)
 
 1. [Install terraform](https://www.terraform.io/).
-1. [Create a project](https://cloud.google.com/resource-manager/docs/creating-managing-projects) on GCP to host the application.
-1. [Enable Billing for the project](https://cloud.google.com/billing/docs/how-to/modify-project#enable_billing_for_a_project).
 1. [Install the gcloud CLI](https://cloud.google.com/sdk/docs/install).
 1. [Login with gcloud](https://cloud.google.com/sdk/gcloud/reference/auth/login).
-1. [Build and push the Docker image to Container Registry](https://cloud.google.com/container-registry/docs/pushing-and-pulling#pushing_an_image_to_a_registry)
-
-```bash
-$ gcloud builds submit --tag gcr.io/$(gcloud config get-value project)/conduit-server .
-```
-7. Copy the [project.auto.tfvars.template](./deploy/gcp/terraform/project.auto.tfvars.template) file into a `./deploy/gcp/terraform/project.auto.tfvars` file ([See](https://www.terraform.io/language/values/variables#variable-definitions-tfvars-files)) and update the variables' values.
-8. Move into [terraform directory](./deploy/gcp/terraform) and apply terraform
-
-```bash
-$ cd ./deploy/gcp/terraform
-$ terraform apply
-```
+1. Go to the [dev bootstrap directory](./deploy/gcp/terraform/dev/bootstrap), change the `locals.tf` values to your own and run `terraform apply`.
+1. Go the [scripts directory](./deploy/gcp/scripts) and run `build-and-push-container-image.sh <YOUR_ARTIFACT_REPOSITORY>`.
+1. Go to the [dev directory](./deploy/gcp/terraform/dev/bootstrap), change the `locals.tf` values to your own and run `terraform apply`.

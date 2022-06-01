@@ -169,5 +169,8 @@ terraform.rc
 
 # End of https://www.toptal.com/developers/gitignore/api/terraform
 
+# Terraform Backend Files
+**/backend.tf
+
 #
 postgres-data
