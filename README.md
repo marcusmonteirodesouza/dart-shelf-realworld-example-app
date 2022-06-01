@@ -55,5 +55,5 @@ $ ./test.sh
 1. [Install the gcloud CLI](https://cloud.google.com/sdk/docs/install).
 1. [Login with gcloud](https://cloud.google.com/sdk/gcloud/reference/auth/login).
 1. Go to the [dev bootstrap directory](./deploy/gcp/terraform/dev/bootstrap), change the `locals.tf` values to your own and run `terraform apply`.
-1. Go the [scripts directory](./deploy/gcp/scripts) and run `build-and-push-container-image.sh <YOUR_ARTIFACT_REPOSITORY>`.
+1. Go the [scripts directory](./deploy/gcp/scripts) and run `build-and-push-container-image.sh <YOUR_PROJECT_ID> <YOUR_ARTIFACT_REPOSITORY>`.
 1. Go to the [dev directory](./deploy/gcp/terraform/dev/bootstrap), change the `locals.tf` values to your own and run `terraform apply`.
